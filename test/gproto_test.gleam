@@ -10,40 +10,41 @@ pub fn main() {
   gleeunit.main()
 }
 
+// hello.proto -------------------------------
+
+// message HeartBeat {
+//     int32 session = 1;
+//     repeated string texts = 2;
+// }
+
+// ended ------------------------------------
+
+// Generated, Don't change!
+type Message {
+  HeartBeat(session: Int, texts: List(String))
+}
+
+fn encode_message(message: Message) -> BitArray {
+  case message {
+    HeartBeat(session, texts) -> {
+      // 1 is read from `.proto`
+      <<>>
+      |> buffer.encode_int_field(1, session)
+      |> buffer.encode_repeated_field(2, texts, buffer.encode_string)
+    }
+  }
+}
+
+pub fn pb_message_test() {
+  HeartBeat(1, ["hello", "world"])
+  |> encode_message
+  |> bit_array.base16_encode
+  |> io.debug
+  io.debug("-------------------------------")
+}
 // message TestVarInt {
 //     int32 v = 1;
 // }
-pub fn pb_encode_test() {
-  // varint
-  <<>>
-  |> buffer.encode_key(1, buffer.varint_type)
-  |> buffer.encode_varint(1)
-  |> bit_array.base16_encode
-  |> io.debug
-
-  <<>>
-  |> buffer.encode_key(1, buffer.varint_type)
-  |> buffer.encode_varint(150)
-  |> bit_array.base16_encode
-  |> io.debug
-
-  <<>>
-  |> buffer.encode_key(1, buffer.varint_type)
-  |> buffer.encode_varint(-150)
-  |> bit_array.base16_encode
-  |> io.debug
-
-  // i32
-  <<>>
-  |> buffer.encode_key(1, buffer.i32_type)
-  |> buffer.encode_i32(1)
-  |> bit_array.base16_encode
-  |> io.debug
-
-  // i64
-  <<>>
-  |> buffer.encode_key(1, buffer.i64_type)
-  |> buffer.encode_i64(1)
-  |> bit_array.base16_encode
-  |> io.debug
-}
+// pub fn pb_encode_test() {
+//   todo
+// }
