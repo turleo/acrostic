@@ -5,6 +5,7 @@ import gleam/string
 import gleeunit
 import gleeunit/should
 import gproto/proto
+import gproto/protogen
 
 pub fn main() {
   gleeunit.main()
