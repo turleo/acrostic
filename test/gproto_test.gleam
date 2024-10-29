@@ -21,12 +21,17 @@ pub fn main() {
 
 // Generated, Don't change!
 type Message {
+  Ping(session: Int)
   Item(id: Int, num: Int)
   HeartBeat(session: Int, items: List(Int))
 }
 
 fn encode_message(message: Message) -> BitArray {
   case message {
+    Ping(session) -> {
+      <<>>
+      |> proto.encode_int_field(1, session, proto.varint_type)
+    }
     Item(id, num) -> {
       <<>>
       |> proto.encode_int_field(1, id, proto.varint_type)
@@ -44,6 +49,11 @@ fn encode_message(message: Message) -> BitArray {
 // gleam  0801 1203 026869
 
 pub fn pb_message_test() {
+  Ping(0xffffffff)
+  |> encode_message
+  |> bit_array.base16_encode
+  |> io.debug
+
   HeartBeat(1, [0, 1, 2])
   |> encode_message
   |> bit_array.base16_encode

@@ -1,7 +1,6 @@
 import gleam/int
 
 // const mask32bit = 0xFFFFFFFF
-
 const mask64bit = 0xFFFFFFFFFFFFFFFF
 
 /// logic shift right

@@ -105,7 +105,6 @@ pub fn encode_len_field(
   }
 }
 
-// [(key + len + data), (key + len2 + data2), ...]
 pub fn encode_repeated_field(
   buf: BitArray,
   field_number: Int,
