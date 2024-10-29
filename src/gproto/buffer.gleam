@@ -117,16 +117,16 @@ pub fn encode_repeated_field(
 ) -> BitArray {
   let data =
     children
-    |> list.map(fn(a) { encoder(a) })
-    |> list.fold(<<>>, bit_array.append)
-  let length = bit_array.byte_size(data)
-  case length == 0 {
-    True -> buf
-    False -> {
-      buf
+    |> list.map(fn(a) {
+      let data = encoder(a)
+      let length = bit_array.byte_size(data)
+
+      <<>>
       |> encode_key(field_number, len_type)
       |> bit_array.append(encode_varint(length))
       |> bit_array.append(data)
-    }
-  }
+    })
+    |> list.fold(<<>>, bit_array.append)
+
+  buf |> bit_array.append(data)
 }

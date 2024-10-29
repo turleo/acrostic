@@ -38,7 +38,7 @@ fn encode_message(message: Message) -> BitArray {
 // gleam  0801 1203 026869
 
 pub fn pb_message_test() {
-  HeartBeat(1, ["hi"])
+  HeartBeat(1, ["", "123"])
   |> encode_message
   |> bit_array.base16_encode
   |> io.debug
