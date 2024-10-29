@@ -2,7 +2,6 @@ import gleam/bit_array
 import gleam/bool
 import gleam/int
 import gleam/list
-import gleam/string
 import gproto/intex.{lsr}
 
 // int32, int64, uint32, uint64, bool, enum
@@ -11,7 +10,7 @@ pub const varint_type = 0
 // fixed64, sfixed64, double
 pub const i64_type = 1
 
-// 字符串、字节、嵌入消息、打包重复字段
+// string, bytes, embedded messages, repeated fields
 pub const len_type = 2
 
 // deprecated
@@ -22,7 +21,6 @@ pub const len_type = 2
 pub const i32_type = 5
 
 // const mask32bit = 0xFFFFFFFF
-
 const mask64bit = 0xFFFFFFFFFFFFFFFF
 
 pub fn encode_key(
@@ -57,7 +55,7 @@ pub fn encode_varint(n: Int) -> BitArray {
 }
 
 pub fn encode_string(s: String) -> BitArray {
-  <<{ encode_varint(string.length(s)) }:bits, s:utf8>>
+  <<s:utf8>>
 }
 
 // 子类型也使用 Len 类型 key + body_size + body
@@ -68,37 +66,31 @@ pub fn encode_int_field(
   buf: BitArray,
   field_number: Int,
   value: Int,
+  // varint_type, i32_type, i64_type
+  wire_type: Int,
 ) -> BitArray {
-  case value == 0 {
-    True -> buf
-    False -> {
-      buf
-      |> encode_key(field_number, varint_type)
-      |> bit_array.append(encode_varint(value))
+  case
+    wire_type == varint_type || wire_type == i32_type || wire_type == i64_type
+  {
+    True -> {
+      case value == 0 {
+        True -> buf
+        False -> {
+          buf
+          |> encode_key(field_number, wire_type)
+          |> bit_array.append(encode_varint(value))
+        }
+      }
     }
+    False -> panic as { "Invalid int wire_type" <> int.to_string(wire_type) }
   }
 }
 
 pub fn encode_bool_field(buf: BitArray, field_number: Int, b: Bool) -> BitArray {
-  encode_int_field(buf, field_number, bool.to_int(b))
+  encode_int_field(buf, field_number, varint_type, bool.to_int(b))
 }
 
-pub fn encode_string_field(
-  buf: BitArray,
-  field_number: Int,
-  s: String,
-) -> BitArray {
-  case s == "" {
-    True -> buf
-    False -> {
-      buf
-      |> encode_key(field_number, len_type)
-      |> bit_array.append(encode_string(s))
-    }
-  }
-}
-
-pub fn encode_child_field(
+pub fn encode_len_field(
   buf: BitArray,
   field_number: Int,
   child: a,

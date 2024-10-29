@@ -27,16 +27,18 @@ type Message {
 fn encode_message(message: Message) -> BitArray {
   case message {
     HeartBeat(session, texts) -> {
-      // 1 is read from `.proto`
       <<>>
-      |> buffer.encode_int_field(1, session)
+      |> buffer.encode_int_field(1, session, buffer.varint_type)
       |> buffer.encode_repeated_field(2, texts, buffer.encode_string)
     }
   }
 }
 
+// lua    0801 12 026869
+// gleam  0801 1203 026869
+
 pub fn pb_message_test() {
-  HeartBeat(1, ["hello", "world"])
+  HeartBeat(1, ["hi"])
   |> encode_message
   |> bit_array.base16_encode
   |> io.debug
