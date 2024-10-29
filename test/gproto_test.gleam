@@ -4,7 +4,7 @@ import gleam/io
 import gleam/string
 import gleeunit
 import gleeunit/should
-import gproto/buffer
+import gproto/proto
 
 pub fn main() {
   gleeunit.main()
@@ -22,20 +22,20 @@ pub fn main() {
 // Generated, Don't change!
 type Message {
   Item(id: Int, num: Int)
-  HeartBeat(session: Int, items: List(Message))
+  HeartBeat(session: Int, items: List(Int))
 }
 
 fn encode_message(message: Message) -> BitArray {
   case message {
     Item(id, num) -> {
       <<>>
-      |> buffer.encode_int_field(1, id, buffer.varint_type)
-      |> buffer.encode_int_field(2, num, buffer.varint_type)
+      |> proto.encode_int_field(1, id, proto.varint_type)
+      |> proto.encode_int_field(2, num, proto.varint_type)
     }
     HeartBeat(session, items) -> {
       <<>>
-      |> buffer.encode_int_field(1, session, buffer.varint_type)
-      |> buffer.encode_repeated_field(2, items, encode_message)
+      |> proto.encode_int_field(1, session, proto.varint_type)
+      |> proto.encode_repeated_field(2, items, proto.encode_varint, True)
     }
   }
 }
@@ -44,11 +44,12 @@ fn encode_message(message: Message) -> BitArray {
 // gleam  0801 1203 026869
 
 pub fn pb_message_test() {
-  HeartBeat(1, [Item(1, 1), Item(2, 1)])
+  HeartBeat(1, [0, 1, 2])
   |> encode_message
   |> bit_array.base16_encode
   |> io.debug
   io.debug("-------------------------------")
+  // io.debug()
 }
 // message TestVarInt {
 //     int32 v = 1;

@@ -2,7 +2,7 @@ import gleam/bit_array
 import gleam/bool
 import gleam/int
 import gleam/list
-import gproto/intex.{lsr}
+import gproto/helper.{lsr}
 
 // int32, int64, uint32, uint64, bool, enum
 pub const varint_type = 0
@@ -58,10 +58,6 @@ pub fn encode_string(s: String) -> BitArray {
   <<s:utf8>>
 }
 
-// 子类型也使用 Len 类型 key + body_size + body
-
-// 重复元素 packed : key + body_size + body, body 包含多个元素, 每个元素的大小取决于它的类型
-
 pub fn encode_int_field(
   buf: BitArray,
   field_number: Int,
@@ -82,7 +78,7 @@ pub fn encode_int_field(
         }
       }
     }
-    False -> panic as { "Invalid int wire_type" <> int.to_string(wire_type) }
+    False -> panic as { "Invalid int wire_type, " <> int.to_string(wire_type) }
   }
 }
 
@@ -109,24 +105,43 @@ pub fn encode_len_field(
   }
 }
 
+// [(key + len + data), (key + len2 + data2), ...]
 pub fn encode_repeated_field(
   buf: BitArray,
   field_number: Int,
   children: List(a),
   encoder: fn(a) -> BitArray,
+  packed: Bool,
 ) -> BitArray {
-  let data =
-    children
-    |> list.map(fn(a) {
-      let data = encoder(a)
-      let length = bit_array.byte_size(data)
+  case packed {
+    // [key + len + data + data2 ...]
+    True -> {
+      let data =
+        children
+        |> list.map(fn(a) { encoder(a) })
+        |> list.fold(<<>>, bit_array.append)
 
-      <<>>
+      let length = bit_array.byte_size(data)
+      buf
       |> encode_key(field_number, len_type)
       |> bit_array.append(encode_varint(length))
       |> bit_array.append(data)
-    })
-    |> list.fold(<<>>, bit_array.append)
+    }
+    // [(key + len + data), (key + len2 + data2), ...]
+    False -> {
+      let data =
+        children
+        |> list.map(fn(a) {
+          let data = encoder(a)
+          let length = bit_array.byte_size(data)
+          <<>>
+          |> encode_key(field_number, len_type)
+          |> bit_array.append(encode_varint(length))
+          |> bit_array.append(data)
+        })
+        |> list.fold(<<>>, bit_array.append)
 
-  buf |> bit_array.append(data)
+      buf |> bit_array.append(data)
+    }
+  }
 }
