@@ -21,15 +21,21 @@ pub fn main() {
 
 // Generated, Don't change!
 type Message {
-  HeartBeat(session: Int, texts: List(String))
+  Item(id: Int, num: Int)
+  HeartBeat(session: Int, items: List(Message))
 }
 
 fn encode_message(message: Message) -> BitArray {
   case message {
-    HeartBeat(session, texts) -> {
+    Item(id, num) -> {
+      <<>>
+      |> buffer.encode_int_field(1, id, buffer.varint_type)
+      |> buffer.encode_int_field(2, num, buffer.varint_type)
+    }
+    HeartBeat(session, items) -> {
       <<>>
       |> buffer.encode_int_field(1, session, buffer.varint_type)
-      |> buffer.encode_repeated_field(2, texts, buffer.encode_string)
+      |> buffer.encode_repeated_field(2, items, encode_message)
     }
   }
 }
@@ -38,7 +44,7 @@ fn encode_message(message: Message) -> BitArray {
 // gleam  0801 1203 026869
 
 pub fn pb_message_test() {
-  HeartBeat(1, ["", "123"])
+  HeartBeat(1, [Item(1, 1), Item(2, 1)])
   |> encode_message
   |> bit_array.base16_encode
   |> io.debug
