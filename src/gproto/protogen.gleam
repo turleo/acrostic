@@ -1,5 +1,6 @@
 import gleam/dict.{type Dict}
 import gleam/erlang/process.{type Subject}
+import gleam/int
 import gleam/io
 import gleam/list
 import gleam/otp/actor
@@ -11,6 +12,7 @@ import nibble
 import nibble/lexer
 import pprint
 import simplifile
+import sprinkle.{format}
 
 type State {
   State(files: List(String))
@@ -93,7 +95,9 @@ fn generate_proto(text: String, out_path: String) {
   io.println("===========")
   pprint.debug(messages)
 
-  let _ = simplifile.delete(out_path)
+  let assert Ok(_) = simplifile.delete(out_path)
+  let assert Ok(_) = "import gproto/proto\n\n" |> simplifile.write(to: out_path)
+
   write_enums(enums, out_path)
   // write structs
   let _ = case list.length(structs) > 0 {
@@ -160,15 +164,53 @@ fn write_structs(structs: List(parser.Message), out_path: String) {
 // }
 fn write_enums(enums: List(parser.PbEnum), out_path: String) {
   enums
-  |> list.each(fn(a) {
+  |> list.each(fn(enum) {
+    // define gen
     let assert Ok(_) =
-      simplifile.append(to: out_path, contents: "pub type " <> a.name <> " {\n")
-    a.fields
+      simplifile.append(
+        to: out_path,
+        contents: "pub type " <> enum.name <> " {\n",
+      )
+    enum.fields
     |> list.each(fn(field) {
       let assert Ok(_) =
         simplifile.append(to: out_path, contents: "  " <> field.name <> "\n")
     })
     let assert Ok(_) = simplifile.append(to: out_path, contents: "}\n\n")
+
+    // encoding gen
+
+    // pub fn encode_item(item: Item) -> BitArray {
+    //   ...
+    // }
+    format(
+      "
+pub fn encode_{name}({name}: {type}) -> BitArray {
+  {body}
+}
+
+",
+      [
+        #("name", pascal_to_snake(enum.name)),
+        #("type", enum.name),
+        #(
+          "body",
+          enum.fields
+            |> list.map(fn(f) {
+              format("    {key} -> proto.encode_varint({value})\n", [
+                #("key", f.name),
+                #("value", int.to_string(f.tag)),
+              ])
+            })
+            |> list.fold(
+              "case " <> pascal_to_snake(enum.name) <> " {\n",
+              string.append,
+            )
+            |> string.append("  }"),
+        ),
+      ],
+    )
+    |> simplifile.append(to: out_path)
   })
 }
 
@@ -243,4 +285,13 @@ fn to_gleam_ty(ty: String, repeated: Bool) -> String {
     True -> "List(" <> ty <> ")"
     False -> ty
   }
+}
+
+fn pascal_to_snake(ident: String) -> String {
+  let assert Ok(re) = regex.from_string("[A-Z][a-z]*")
+  regex.scan(re, ident)
+  |> list.map(fn(a) { a.content })
+  |> list.map(fn(a) { string.lowercase(a) })
+  |> list.fold("", fn(a, b) { a <> "_" <> b })
+  |> string.drop_left(1)
 }

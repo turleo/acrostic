@@ -11,6 +11,7 @@ packages = [
   { name = "nibble", version = "1.1.1", build_tools = ["gleam"], requirements = ["gleam_stdlib"], otp_app = "nibble", source = "hex", outer_checksum = "67C6BEBC1AB6D771AB893B4A7B3E66C92668C6E7774C335FEFCD545B06435FE5" },
   { name = "pprint", version = "1.0.4", build_tools = ["gleam"], requirements = ["glam", "gleam_stdlib"], otp_app = "pprint", source = "hex", outer_checksum = "C310A98BDC0995644847C3C8702DE19656D6BCD638B2A8A358B97824379ECAA1" },
   { name = "simplifile", version = "2.2.0", build_tools = ["gleam"], requirements = ["filepath", "gleam_stdlib"], otp_app = "simplifile", source = "hex", outer_checksum = "0DFABEF7DC7A9E2FF4BB27B108034E60C81BEBFCB7AB816B9E7E18ED4503ACD8" },
+  { name = "sprinkle", version = "1.0.1", build_tools = ["gleam"], requirements = ["gleam_stdlib"], otp_app = "sprinkle", source = "hex", outer_checksum = "6E601F2BDB2F9081721F184A81EFB5B87D722D0CE2E9C97F58E0F1B26EAC7A0B" },
 ]
 
 [requirements]
@@ -21,3 +22,4 @@ gleeunit = { version = ">= 1.0.0 and < 2.0.0" }
 nibble = { version = ">= 1.1.1 and < 2.0.0" }
 pprint = { version = ">= 1.0.4 and < 2.0.0" }
 simplifile = { version = ">= 2.2.0 and < 3.0.0" }
+sprinkle = { version = ">= 1.0.1 and < 2.0.0" }
