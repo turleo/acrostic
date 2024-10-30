@@ -31,16 +31,16 @@ fn encode_message(message: Message) -> BitArray {
   case message {
     Ping(session) -> {
       <<>>
-      |> proto.encode_int_field(1, session, proto.varint_type)
+      |> proto.encode_int_field(1, session)
     }
     Item(id, num) -> {
       <<>>
-      |> proto.encode_int_field(1, id, proto.varint_type)
-      |> proto.encode_int_field(2, num, proto.varint_type)
+      |> proto.encode_int_field(1, id)
+      |> proto.encode_int_field(2, num)
     }
     HeartBeat(session, items) -> {
       <<>>
-      |> proto.encode_int_field(1, session, proto.varint_type)
+      |> proto.encode_int_field(1, session)
       |> proto.encode_repeated_field(2, items, proto.encode_varint, True)
     }
   }

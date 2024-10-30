@@ -96,7 +96,9 @@ fn generate_proto(text: String, out_path: String) {
   pprint.debug(messages)
 
   let assert Ok(_) = simplifile.delete(out_path)
-  let assert Ok(_) = "import gproto/proto\n\n" |> simplifile.write(to: out_path)
+  let assert Ok(_) =
+    "import gproto/proto.{i32_type, i64_type, len_type, varint_type}\n\n"
+    |> simplifile.write(to: out_path)
 
   write_enums(enums, out_path)
   // write structs
@@ -148,14 +150,47 @@ fn write_messages(messages: List(parser.Message), out_path: String) {
 fn write_structs(structs: List(parser.Message), out_path: String) {
   structs
   |> list.each(fn(struct) {
+    // define gen
     let assert Ok(_) =
       simplifile.append(
         to: out_path,
         contents: "pub type " <> struct.name <> " {\n",
       )
-    let body = message_to_string(struct)
-    simplifile.append(to: out_path, contents: body <> "}\n\n")
+    let assert Ok(_) =
+      simplifile.append(
+        to: out_path,
+        contents: message_to_string(struct) <> "}\n\n",
+      )
+    // encoding gen
+    //   fn encode_item(item: Item) -> BitArray {
+    //   <<>>
+    //   |> proto.encode_int_field(1, item.id, varint_type)
+    //   |> proto.encode_int_field(2, item.num, varint_type)
+    // }
+    format(
+      "
+pub fn encode_{name}({name}: {type}) -> BitArray {
+  {body}
+}
+
+",
+      [
+        #("name", pascal_to_snake(struct.name)),
+        #("type", struct.name),
+        #("body", "todo"),
+      ],
+    )
+    |> simplifile.append(to: out_path)
   })
+}
+
+//   |> proto.encode_int_field(1, item.id, varint_type)
+fn get_field_encoding(field: parser.Field) -> String {
+  let ty = to_gleam_ty(field.ty, field.repeated)
+  case ty {
+    "Int" -> ""
+    _ -> ""
+  }
 }
 
 // pub type Season {

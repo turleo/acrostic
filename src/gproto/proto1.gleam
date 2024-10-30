@@ -1,4 +1,4 @@
-import gproto/proto
+import gproto/proto.{i32_type, i64_type, len_type, varint_type}
 
 pub type UserStatus {
   Idle
@@ -18,7 +18,9 @@ pub type Item {
 }
 
 fn encode_item(item: Item) -> BitArray {
-  todo
+  <<>>
+  |> proto.encode_int_field(1, item.id)
+  |> proto.encode_int_field(2, item.num)
 }
 
 // messages start -----------------------------------

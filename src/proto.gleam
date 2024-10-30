@@ -1,10 +1,11 @@
-import gproto/proto
+import gproto/proto.{i32_type, i64_type, len_type, varint_type}
 
 pub type UserStatus {
   Idle
   Matching
   Gameing
 }
+
 
 pub fn encode_user_status(user_status: UserStatus) -> BitArray {
   case user_status {
@@ -20,6 +21,7 @@ pub type RoomStatus {
   RGameing
 }
 
+
 pub fn encode_room_status(room_status: RoomStatus) -> BitArray {
   case room_status {
     RIdle -> proto.encode_varint(0)
@@ -33,8 +35,14 @@ pub type Item {
   Item(id: Int, num: Int)
 }
 
+
+pub fn encode_item(item: Item) -> BitArray {
+  todo
+}
+
 // messages start -----------------------------------
 pub type Message {
   ReqUseItem(session: Int, item: Item)
   Hello(session: Int, texts: List(String))
 }
+

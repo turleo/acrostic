@@ -34,12 +34,12 @@ pub fn encode_key(
   >>
 }
 
-pub fn encode_i64(n: Int) -> BitArray {
-  <<n:little-size(64)>>
+pub fn encode_i64(n: Float) -> BitArray {
+  <<n:float-little-size(64)>>
 }
 
-pub fn encode_i32(n: Int) -> BitArray {
-  <<n:little-size(32)>>
+pub fn encode_i32(n: Float) -> BitArray {
+  <<n:float-little-size(32)>>
 }
 
 pub fn encode_varint(n: Int) -> BitArray {
@@ -62,19 +62,35 @@ pub fn encode_int_field(
   buf: BitArray,
   field_number: Int,
   value: Int,
-  // varint_type, i32_type, i64_type
+) -> BitArray {
+  case value == 0 {
+    True -> buf
+    False -> {
+      buf
+      |> encode_key(field_number, varint_type)
+      |> bit_array.append(encode_varint(value))
+    }
+  }
+}
+
+pub fn encode_float_field(
+  buf: BitArray,
+  field_number: Int,
+  value: Float,
+  // i32_type, i64_type
   wire_type: Int,
 ) -> BitArray {
-  case
-    wire_type == varint_type || wire_type == i32_type || wire_type == i64_type
-  {
+  case wire_type == i32_type || wire_type == i64_type {
     True -> {
-      case value == 0 {
+      case value == 0.0 {
         True -> buf
         False -> {
           buf
           |> encode_key(field_number, wire_type)
-          |> bit_array.append(encode_varint(value))
+          |> bit_array.append(case wire_type == i32_type {
+            True -> encode_i32(value)
+            False -> encode_i64(value)
+          })
         }
       }
     }
@@ -83,7 +99,7 @@ pub fn encode_int_field(
 }
 
 pub fn encode_bool_field(buf: BitArray, field_number: Int, b: Bool) -> BitArray {
-  encode_int_field(buf, field_number, varint_type, bool.to_int(b))
+  encode_int_field(buf, field_number, bool.to_int(b))
 }
 
 pub fn encode_len_field(
