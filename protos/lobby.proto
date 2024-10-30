@@ -1,0 +1,10 @@
+syntax = "proto3";
+package guandan;
+
+import "protos/common.proto";
+
+
+message ReqUseItem {
+    int32 session = 1;
+    Item item = 2;
+}

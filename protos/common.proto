@@ -1,0 +1,21 @@
+syntax = "proto3";
+package guandan;
+
+
+enum UserStatus {
+    Idle = 0;
+    Matching = 1;
+    Gameing = 2;
+}
+
+enum RoomStatus {
+    RIdle = 0;
+    RMatching = 1;
+    RGameing = 2;
+}
+
+// @gleam struct
+message Item {
+    int32 id = 1;
+    int32 num = 2;
+}

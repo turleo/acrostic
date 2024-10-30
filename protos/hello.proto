@@ -1,0 +1,10 @@
+syntax = "proto3";
+package guandan;
+
+import "protos/common.proto";
+
+
+message Hello {
+    int32 session = 1;
+    repeated string texts = 2;
+}
