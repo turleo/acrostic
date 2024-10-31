@@ -1,4 +1,4 @@
-import pbf/proto.{i32_type, i64_type, len_type, varint_type}
+import pbf/encoding.{i32_type, i64_type, len_type, varint_type}
 
 pub type UserStatus {
   Idle
@@ -9,9 +9,9 @@ pub type UserStatus {
 
 pub fn encode_user_status(user_status: UserStatus) -> BitArray {
   case user_status {
-    Idle -> proto.encode_varint(0)
-    Matching -> proto.encode_varint(1)
-    Gameing -> proto.encode_varint(2)
+    Idle -> encoding.encode_varint(0)
+    Matching -> encoding.encode_varint(1)
+    Gameing -> encoding.encode_varint(2)
   }
 }
 
@@ -24,9 +24,9 @@ pub type RoomStatus {
 
 pub fn encode_room_status(room_status: RoomStatus) -> BitArray {
   case room_status {
-    RIdle -> proto.encode_varint(0)
-    RMatching -> proto.encode_varint(1)
-    RGameing -> proto.encode_varint(2)
+    RIdle -> encoding.encode_varint(0)
+    RMatching -> encoding.encode_varint(1)
+    RGameing -> encoding.encode_varint(2)
   }
 }
 

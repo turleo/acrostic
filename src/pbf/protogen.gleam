@@ -97,7 +97,7 @@ fn generate_proto(text: String, out_path: String) {
 
   let assert Ok(_) = simplifile.delete(out_path)
   let assert Ok(_) =
-    "import pbf/proto.{i32_type, i64_type, len_type, varint_type}\n\n"
+    "import pbf/encoding.{i32_type, i64_type, len_type, varint_type}\n\n"
     |> simplifile.write(to: out_path)
 
   write_enums(enums, out_path)
@@ -162,10 +162,10 @@ fn write_structs(structs: List(parser.Message), out_path: String) {
         contents: message_to_string(struct) <> "}\n\n",
       )
     // encoding gen
-    //   fn encode_item(item: Item) -> BitArray {
+    // fn encode_item(item: Item) -> BitArray {
     //   <<>>
-    //   |> proto.encode_int_field(1, item.id, varint_type)
-    //   |> proto.encode_int_field(2, item.num, varint_type)
+    //   |> encoding.encode_int_field(1, item.id, varint_type)
+    //   |> encoding.encode_int_field(2, item.num, varint_type)
     // }
     format(
       "
@@ -184,7 +184,7 @@ pub fn encode_{name}({name}: {type}) -> BitArray {
   })
 }
 
-//   |> proto.encode_int_field(1, item.id, varint_type)
+//   |> encoding.encode_int_field(1, item.id, varint_type)
 fn get_field_encoding(field: parser.Field) -> String {
   let ty = to_gleam_ty(field.ty, field.repeated)
   case ty {
@@ -232,7 +232,7 @@ pub fn encode_{name}({name}: {type}) -> BitArray {
           "body",
           enum.fields
             |> list.map(fn(f) {
-              format("    {key} -> proto.encode_varint({value})\n", [
+              format("    {key} -> encoding.encode_varint({value})\n", [
                 #("key", f.name),
                 #("value", int.to_string(f.tag)),
               ])
