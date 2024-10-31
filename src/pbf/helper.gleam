@@ -15,8 +15,8 @@ pub fn lsl(n: Int, bits: Int) -> Int {
 }
 
 @external(erlang, "os", "cmd")
-fn erl_cmd(command: Charlist) -> String
+fn do_cmd(command: Charlist) -> String
 
 pub fn cmd(command: String) -> String {
-  erl_cmd(charlist.from_string(command))
+  do_cmd(charlist.from_string(command))
 }
