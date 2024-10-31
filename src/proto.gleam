@@ -45,6 +45,7 @@ pub fn encode_item(item: Item) -> BitArray {
 // messages start -----------------------------------
 pub type Message {
   ReqUseItem(session: Int, item: Item)
+  ResUseItem(session: Int, nums: List(Int), items: List(Item))
   Hello(session: Int, texts: List(String))
 }
 
@@ -54,6 +55,13 @@ pub fn encode(msg: Message) -> BitArray {
       <<>>
       |> encoding.encode_int_field(1, session)
       |> encoding.encode_len_field(2, item, encode_item)
+    }
+
+    ResUseItem(session, nums, items) -> {
+      <<>>
+      |> encoding.encode_int_field(1, session)
+      |> encoding.encode_repeated_field(2, nums, encoding.encode_varint, True)
+      |> encoding.encode_repeated_field(6, items, encode_item, False)
     }
 
     Hello(session, texts) -> {

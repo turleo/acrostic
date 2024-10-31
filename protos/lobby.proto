@@ -8,3 +8,9 @@ message ReqUseItem {
     int32 session = 1;
     Item item = 2;
 }
+
+message ResUseItem {
+    int32 session = 1;
+    repeated int32 nums = 2;
+    repeated Item items = 6; 
+}

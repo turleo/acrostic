@@ -2,58 +2,34 @@ import gleam/bit_array
 import gleam/io
 import gleeunit
 import gleeunit/should
-import pbf/proto
+import proto.{Hello, Item, ReqUseItem, ResUseItem}
 
 pub fn main() {
   gleeunit.main()
 }
 
-// hello.proto -------------------------------
-
-// message HeartBeat {
-//     int32 session = 1;
-//     repeated string texts = 2;
-// }
-
-// ended ------------------------------------
-
-// Generated, Don't change!
-type Message {
-  Ping(session: Int)
-  Item(id: Int, num: Int)
-  HeartBeat(session: Int, items: List(Int))
-}
-
-fn encode_message(message: Message) -> BitArray {
-  case message {
-    Ping(session) -> {
-      <<>>
-      |> proto.encode_int_field(1, session)
-    }
-    Item(id, num) -> {
-      <<>>
-      |> proto.encode_int_field(1, id)
-      |> proto.encode_int_field(2, num)
-    }
-    HeartBeat(session, items) -> {
-      <<>>
-      |> proto.encode_int_field(1, session)
-      |> proto.encode_repeated_field(2, items, proto.encode_varint, True)
-    }
-  }
-}
-
-// lua    0801 12 026869
-// gleam  0801 1203 026869
-
 pub fn pb_message_test() {
-  Ping(0xffffffff)
-  |> encode_message
+  proto.encode_item(Item(1, 100, 0.0, False, ""))
   |> bit_array.base16_encode
   |> io.debug
+  io.debug("-------------------------------")
 
-  HeartBeat(1, [0, 1, 2])
-  |> encode_message
+  proto.encode(Hello(1, ["hello", "world"]))
+  |> bit_array.base16_encode
+  |> io.debug
+  io.debug("-------------------------------")
+
+  proto.encode(ReqUseItem(100, Item(1, 100, 0.0, False, "")))
+  |> bit_array.base16_encode
+  |> io.debug
+  io.debug("-------------------------------")
+
+  proto.encode(
+    ResUseItem(100, [0, 0, 1], [
+      Item(1, 100, 0.0, False, ""),
+      Item(2, 100, 0.0, False, ""),
+    ]),
+  )
   |> bit_array.base16_encode
   |> io.debug
   io.debug("-------------------------------")
