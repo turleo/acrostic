@@ -37,7 +37,7 @@ pub fn load(self: Self, filename: String) {
 pub fn generate(self: Self, out_path: String) {
   case process.try_call(self, Generate(_, out_path), within: 10_000) {
     Ok(_) -> {
-      io.println("generate done")
+      io.println("done")
       self
     }
     Error(e) -> {

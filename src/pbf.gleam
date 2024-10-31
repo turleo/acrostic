@@ -1,6 +1,5 @@
-import gleam/erlang/process
 import gleam/io
-import pbf/protogen
+import pbf/protogen.{generate, load, shutdown}
 
 pub fn main() {
   io.println("Hello from pbf!")
@@ -8,11 +7,9 @@ pub fn main() {
   let assert Ok(generator) = protogen.start()
   let _ =
     generator
-    |> protogen.load("protos/common.proto")
-    |> protogen.load("protos/hello.proto")
-    |> protogen.load("protos/lobby.proto")
-    |> protogen.generate("src/proto.gleam")
-    |> protogen.shutdown
-
-  process.sleep_forever()
+    |> load("protos/common.proto")
+    |> load("protos/hello.proto")
+    |> load("protos/lobby.proto")
+    |> generate("src/proto.gleam")
+    |> shutdown
 }
