@@ -54,6 +54,15 @@ pub fn encode_varint(n: Int) -> BitArray {
   }
 }
 
+pub fn encode_bool(b: Bool) -> BitArray {
+  encode_varint({
+    case b {
+      True -> 1
+      False -> 0
+    }
+  })
+}
+
 pub fn encode_string(s: String) -> BitArray {
   <<s:utf8>>
 }

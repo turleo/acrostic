@@ -177,7 +177,12 @@ pub fn encode_{name}({name}: {type}) -> BitArray {
       [
         #("name", pascal_to_snake(struct.name)),
         #("type", struct.name),
-        #("body", "todo"),
+        #(
+          "body",
+          struct.fields
+            |> list.map(get_field_encoding(_, pascal_to_snake(struct.name)))
+            |> list.fold("<<>>\n", string.append),
+        ),
       ],
     )
     |> simplifile.append(to: out_path)
@@ -185,11 +190,85 @@ pub fn encode_{name}({name}: {type}) -> BitArray {
 }
 
 //   |> encoding.encode_int_field(1, item.id, varint_type)
-fn get_field_encoding(field: parser.Field) -> String {
-  let ty = to_gleam_ty(field.ty, field.repeated)
+fn get_field_encoding(field: parser.Field, record_name: String) -> String {
+  case field.repeated {
+    True ->
+      format(
+        "  |> encoding.encode_repeated_field({tag}, {record}.{field}, {encoder}, {packed})\n",
+        [
+          #("tag", int.to_string(field.tag)),
+          #("record", record_name),
+          #("field", field.name),
+          #("encoder", get_encoder_and_packed(field.ty).0),
+          #("packed", get_encoder_and_packed(field.ty).1),
+        ],
+      )
+    False -> {
+      case to_gleam_ty(field.ty, False) {
+        "Int" ->
+          format("  |> encoding.encode_int_field({tag}, {record}.{field})\n", [
+            #("tag", int.to_string(field.tag)),
+            #("record", record_name),
+            #("field", field.name),
+          ])
+        "Float" ->
+          format(
+            "  |> encoding.encode_float_field({tag}, {record}.{field}, {wire_type})\n",
+            [
+              #("tag", int.to_string(field.tag)),
+              #("record", record_name),
+              #("field", field.name),
+              #("wire_type", float_wire_type(field.ty) <> "_type"),
+            ],
+          )
+        "Bool" ->
+          format("  |> encoding.encode_bool_field({tag}, {record}.{field})\n", [
+            #("tag", int.to_string(field.tag)),
+            #("record", record_name),
+            #("field", field.name),
+          ])
+        "String" ->
+          format(
+            "  |> encoding.encode_len_field({tag}, {record}.{field}, {encoder})\n",
+            [
+              #("tag", int.to_string(field.tag)),
+              #("record", record_name),
+              #("field", field.name),
+              #("encoder", "encoding.encode_string"),
+            ],
+          )
+        x ->
+          // Enum or Struct
+          format(
+            "  |> encoding.encode_len_field({tag}, {record}.{field}, {encoder})\n",
+            [
+              #("tag", int.to_string(field.tag)),
+              #("record", record_name),
+              #("field", field.name),
+              #("encoder", "encode_" <> x),
+            ],
+          )
+      }
+    }
+  }
+}
+
+fn get_encoder_and_packed(ty: String) -> #(String, String) {
+  case to_gleam_ty(ty, False) {
+    "Int" -> #("encoding.encode_varint", "True")
+    "Bool" -> #("encoding.encode_bool", "True")
+    "Float" -> #("encoding.encode_" <> float_wire_type(ty), "True")
+    "String" -> #("encoding.encode_string", "False")
+    // Enum or Struct
+    x -> #("encode_" <> x, "False")
+  }
+}
+
+fn float_wire_type(ty: String) -> String {
   case ty {
-    "Int" -> ""
-    _ -> ""
+    "fixed32" | "sfixed32" | "float" -> "i32"
+    "fixed64" | "sfixed64" | "double" -> "i64"
+    x -> panic as { "Invalid float type: " <> x }
   }
 }
 

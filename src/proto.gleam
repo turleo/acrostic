@@ -37,7 +37,10 @@ pub type Item {
 
 
 pub fn encode_item(item: Item) -> BitArray {
-  todo
+  <<>>
+  |> encoding.encode_int_field(1, item.id)
+  |> encoding.encode_int_field(2, item.num)
+
 }
 
 // messages start -----------------------------------
