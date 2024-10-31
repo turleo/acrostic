@@ -47,6 +47,7 @@ pub type Message {
   ReqUseItem(session: Int, item: Item)
   ResUseItem(session: Int, nums: List(Int), items: List(Item))
   Hello(session: Int, texts: List(String))
+  TestFloat(f: Float, d: Float)
 }
 
 pub fn encode(msg: Message) -> BitArray {
@@ -68,6 +69,12 @@ pub fn encode(msg: Message) -> BitArray {
       <<>>
       |> encoding.encode_int_field(1, session)
       |> encoding.encode_repeated_field(2, texts, encoding.encode_string, False)
+    }
+
+    TestFloat(f, d) -> {
+      <<>>
+      |> encoding.encode_float_field(1, f, i32_type)
+      |> encoding.encode_float_field(2, d, i64_type)
     }
   }
 }

@@ -8,3 +8,8 @@ message Hello {
     int32 session = 1;
     repeated string texts = 2;
 }
+
+message TestFloat {
+    float f = 1;
+    double d = 2;
+}
