@@ -51,7 +51,7 @@ pub fn shutdown(self: Self) {
   process.send(self, Shutdown)
 }
 
-pub fn start() -> Result(Self, actor.StartError) {
+pub fn start() -> Self {
   actor.start(State([]), fn(message: Message, self: State) -> actor.Next(
     Message,
     State,
@@ -78,6 +78,7 @@ pub fn start() -> Result(Self, actor.StartError) {
       }
     }
   })
+  |> result.lazy_unwrap(fn() { panic })
 }
 
 fn generate_proto(text: String, out_path: String) {
