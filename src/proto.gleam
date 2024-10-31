@@ -47,3 +47,19 @@ pub type Message {
   ReqUseItem(session: Int, item: Item)
   Hello(session: Int, texts: List(String))
 }
+
+pub fn encode(msg: Message) -> BitArray {
+  case msg {
+    ReqUseItem(session, item) -> {
+      <<>>
+      |> encoding.encode_int_field(1, session)
+      |> encoding.encode_len_field(2, item, encode_item)
+    }
+
+    Hello(session, texts) -> {
+      <<>>
+      |> encoding.encode_int_field(1, session)
+      |> encoding.encode_repeated_field(2, texts, encoding.encode_string, False)
+    }
+  }
+}

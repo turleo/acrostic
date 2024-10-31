@@ -1,4 +1,5 @@
 import gleam/dict.{type Dict}
+import gleam/erlang
 import gleam/erlang/process.{type Subject}
 import gleam/int
 import gleam/io
@@ -9,6 +10,7 @@ import gleam/result
 import gleam/string
 import nibble
 import nibble/lexer
+import pbf/helper
 import pbf/parser
 import pprint
 import simplifile
@@ -126,6 +128,8 @@ fn generate_proto(text: String, out_path: String) {
     }
     _ -> Nil
   }
+
+  helper.cmd("gleam format " <> out_path)
 }
 
 // pub type Message {
@@ -158,19 +162,37 @@ fn write_messages(messages: List(parser.Message), out_path: String) {
   //   }
   // }
 
-  //   messages
-  //   |> list.map(fn(msg) {
-  //     format(
-  //       "
-  // ReqUseItem(session, item) -> {
-  //   <<>>
-  //   |> encoding.encode_int_field(1, session)
-  //   |> encoding.encode_len_field(2, item, encode_item)
-  // }
-  //       ",
-  //       [],
-  //     )
-  //   })
+  let body =
+    messages
+    |> list.map(fn(msg) {
+      format(
+        "
+  {message} -> {
+{fields}
+  }
+        ",
+        [
+          #("message", message_to_string(msg, False)),
+          #(
+            "fields",
+            msg.fields
+              |> list.map(get_field_encoding(_, ""))
+              |> list.fold("<<>>\n", string.append),
+          ),
+        ],
+      )
+    })
+    |> list.fold("", string.append)
+
+  "
+    pub fn encode(msg: Message) -> BitArray {
+    case msg {
+        {body}
+    }
+  }
+  "
+  |> format([#("body", body)])
+  |> simplifile.append(to: out_path)
 }
 
 // pub type Item {
@@ -209,7 +231,10 @@ pub fn encode_{name}({name}: {type}) -> BitArray {
         #(
           "body",
           struct.fields
-            |> list.map(get_field_encoding(_, pascal_to_snake(struct.name)))
+            |> list.map(get_field_encoding(
+              _,
+              pascal_to_snake(struct.name) <> ".",
+            ))
             |> list.fold("<<>>\n", string.append),
         ),
       ],
@@ -219,15 +244,14 @@ pub fn encode_{name}({name}: {type}) -> BitArray {
 }
 
 //   |> encoding.encode_int_field(1, item.id, varint_type)
-fn get_field_encoding(field: parser.Field, record_name: String) -> String {
+fn get_field_encoding(field: parser.Field, field_prefix: String) -> String {
   case field.repeated {
     True ->
       format(
-        "  |> encoding.encode_repeated_field({tag}, {record}.{field}, {encoder}, {packed})\n",
+        "  |> encoding.encode_repeated_field({tag}, {value}, {encoder}, {packed})\n",
         [
           #("tag", int.to_string(field.tag)),
-          #("record", record_name),
-          #("field", field.name),
+          #("value", field_prefix <> field.name),
           #("encoder", get_encoder_and_packed(field.ty).0),
           #("packed", get_encoder_and_packed(field.ty).1),
         ],
@@ -235,48 +259,37 @@ fn get_field_encoding(field: parser.Field, record_name: String) -> String {
     False -> {
       case to_gleam_ty(field.ty, False) {
         "Int" ->
-          format("  |> encoding.encode_int_field({tag}, {record}.{field})\n", [
+          format("  |> encoding.encode_int_field({tag}, {value})\n", [
             #("tag", int.to_string(field.tag)),
-            #("record", record_name),
-            #("field", field.name),
+            #("value", field_prefix <> field.name),
           ])
         "Float" ->
           format(
-            "  |> encoding.encode_float_field({tag}, {record}.{field}, {wire_type})\n",
+            "  |> encoding.encode_float_field({tag}, {value}, {wire_type})\n",
             [
               #("tag", int.to_string(field.tag)),
-              #("record", record_name),
-              #("field", field.name),
+              #("value", field_prefix <> field.name),
               #("wire_type", float_wire_type(field.ty) <> "_type"),
             ],
           )
         "Bool" ->
-          format("  |> encoding.encode_bool_field({tag}, {record}.{field})\n", [
+          format("  |> encoding.encode_bool_field({tag}, {value})\n", [
             #("tag", int.to_string(field.tag)),
-            #("record", record_name),
-            #("field", field.name),
+            #("value", field_prefix <> field.name),
           ])
         "String" ->
-          format(
-            "  |> encoding.encode_len_field({tag}, {record}.{field}, {encoder})\n",
-            [
-              #("tag", int.to_string(field.tag)),
-              #("record", record_name),
-              #("field", field.name),
-              #("encoder", "encoding.encode_string"),
-            ],
-          )
+          format("  |> encoding.encode_len_field({tag}, {value}, {encoder})\n", [
+            #("tag", int.to_string(field.tag)),
+            #("value", field_prefix <> field.name),
+            #("encoder", "encoding.encode_string"),
+          ])
         x ->
           // Enum or Struct
-          format(
-            "  |> encoding.encode_len_field({tag}, {record}.{field}, {encoder})\n",
-            [
-              #("tag", int.to_string(field.tag)),
-              #("record", record_name),
-              #("field", field.name),
-              #("encoder", "encode_" <> x),
-            ],
-          )
+          format("  |> encoding.encode_len_field({tag}, {value}, {encoder})\n", [
+            #("tag", int.to_string(field.tag)),
+            #("value", field_prefix <> field.name),
+            #("encoder", "encode_" <> pascal_to_snake(x)),
+          ])
       }
     }
   }
@@ -289,7 +302,7 @@ fn get_encoder_and_packed(ty: String) -> #(String, String) {
     "Float" -> #("encoding.encode_" <> float_wire_type(ty), "True")
     "String" -> #("encoding.encode_string", "False")
     // Enum or Struct
-    x -> #("encode_" <> x, "False")
+    x -> #("encode_" <> pascal_to_snake(x), "False")
   }
 }
 
