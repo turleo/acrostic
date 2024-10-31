@@ -137,11 +137,40 @@ fn write_messages(messages: List(parser.Message), out_path: String) {
     simplifile.append(to: out_path, contents: "pub type Message {\n")
   let assert Ok(_) =
     messages
-    |> list.map(message_to_string)
+    |> list.map(message_to_string(_, True))
     |> list.fold("", string.append)
     |> simplifile.append(to: out_path)
 
   let assert Ok(_) = simplifile.append(to: out_path, contents: "}\n\n")
+  // encoding gen
+  // pub fn encode(msg: Message) -> BitArray {
+  //   case msg {
+  //     ReqUseItem(session, item) -> {
+  //       <<>>
+  //       |> encoding.encode_int_field(1, session)
+  //       |> encoding.encode_len_field(2, item, encode_item)
+  //     }
+  //     Hello(session, texts) -> {
+  //       <<>>
+  //       |> encoding.encode_int_field(1, session)
+  //       |> encoding.encode_repeated_field(2, texts, encoding.encode_string, False)
+  //     }
+  //   }
+  // }
+
+  //   messages
+  //   |> list.map(fn(msg) {
+  //     format(
+  //       "
+  // ReqUseItem(session, item) -> {
+  //   <<>>
+  //   |> encoding.encode_int_field(1, session)
+  //   |> encoding.encode_len_field(2, item, encode_item)
+  // }
+  //       ",
+  //       [],
+  //     )
+  //   })
 }
 
 // pub type Item {
@@ -159,7 +188,7 @@ fn write_structs(structs: List(parser.Message), out_path: String) {
     let assert Ok(_) =
       simplifile.append(
         to: out_path,
-        contents: message_to_string(struct) <> "}\n\n",
+        contents: message_to_string(struct, True) <> "}\n\n",
       )
     // encoding gen
     // fn encode_item(item: Item) -> BitArray {
@@ -361,18 +390,24 @@ fn get_messages(text: String, lexer, parser) {
   })
 }
 
-// 2space + Item(id: Int, num: Int) + \n
-fn message_to_string(message: parser.Message) -> String {
+// "  Item(id: Int, num: Int)\n"
+fn message_to_string(message: parser.Message, type_suffix: Bool) -> String {
   case list.length(message.fields) > 0 {
     True -> {
-      message.fields
-      |> list.map(fn(field) {
-        field.name <> ": " <> to_gleam_ty(field.ty, field.repeated) <> ", "
-      })
-      |> list.fold("  " <> message.name <> "(", string.append)
-      // drop last ', '
-      |> string.drop_right(2)
-      |> string.append(")\n")
+      format("  {name}({body})\n", [
+        #("name", message.name),
+        #("body", {
+          message.fields
+          |> list.map(fn(f) {
+            case type_suffix {
+              True -> f.name <> ": " <> to_gleam_ty(f.ty, f.repeated)
+              False -> f.name
+            }
+          })
+          |> list.fold("", fn(a, b) { a <> b <> ", " })
+          |> string.drop_right(2)
+        }),
+      ])
     }
     False -> "  " <> message.name <> "\n"
   }

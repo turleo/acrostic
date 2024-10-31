@@ -6,7 +6,6 @@ pub type UserStatus {
   Gameing
 }
 
-
 pub fn encode_user_status(user_status: UserStatus) -> BitArray {
   case user_status {
     Idle -> encoding.encode_varint(0)
@@ -21,7 +20,6 @@ pub type RoomStatus {
   RGameing
 }
 
-
 pub fn encode_room_status(room_status: RoomStatus) -> BitArray {
   case room_status {
     RIdle -> encoding.encode_varint(0)
@@ -35,7 +33,6 @@ pub type Item {
   Item(id: Int, num: Int, d: Float, b: Bool, s: String)
 }
 
-
 pub fn encode_item(item: Item) -> BitArray {
   <<>>
   |> encoding.encode_int_field(1, item.id)
@@ -43,7 +40,6 @@ pub fn encode_item(item: Item) -> BitArray {
   |> encoding.encode_float_field(3, item.d, i64_type)
   |> encoding.encode_bool_field(4, item.b)
   |> encoding.encode_len_field(5, item.s, encoding.encode_string)
-
 }
 
 // messages start -----------------------------------
@@ -51,4 +47,3 @@ pub type Message {
   ReqUseItem(session: Int, item: Item)
   Hello(session: Int, texts: List(String))
 }
-
