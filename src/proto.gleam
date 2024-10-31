@@ -32,7 +32,7 @@ pub fn encode_room_status(room_status: RoomStatus) -> BitArray {
 
 // struct start -----------------------------------
 pub type Item {
-  Item(id: Int, num: Int)
+  Item(id: Int, num: Int, d: Float, b: Bool, s: String)
 }
 
 
@@ -40,6 +40,9 @@ pub fn encode_item(item: Item) -> BitArray {
   <<>>
   |> encoding.encode_int_field(1, item.id)
   |> encoding.encode_int_field(2, item.num)
+  |> encoding.encode_float_field(3, item.d, i64_type)
+  |> encoding.encode_bool_field(4, item.b)
+  |> encoding.encode_len_field(5, item.s, encoding.encode_string)
 
 }
 

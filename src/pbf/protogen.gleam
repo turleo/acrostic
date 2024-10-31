@@ -164,8 +164,8 @@ fn write_structs(structs: List(parser.Message), out_path: String) {
     // encoding gen
     // fn encode_item(item: Item) -> BitArray {
     //   <<>>
-    //   |> encoding.encode_int_field(1, item.id, varint_type)
-    //   |> encoding.encode_int_field(2, item.num, varint_type)
+    //   |> encoding.encode_int_field(1, item.id)
+    //   |> encoding.encode_int_field(2, item.num)
     // }
     format(
       "
