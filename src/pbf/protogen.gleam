@@ -7,9 +7,9 @@ import gleam/otp/actor
 import gleam/regex
 import gleam/result
 import gleam/string
-import gproto/parser
 import nibble
 import nibble/lexer
+import pbf/parser
 import pprint
 import simplifile
 import sprinkle.{format}
@@ -97,7 +97,7 @@ fn generate_proto(text: String, out_path: String) {
 
   let assert Ok(_) = simplifile.delete(out_path)
   let assert Ok(_) =
-    "import gproto/proto.{i32_type, i64_type, len_type, varint_type}\n\n"
+    "import pbf/proto.{i32_type, i64_type, len_type, varint_type}\n\n"
     |> simplifile.write(to: out_path)
 
   write_enums(enums, out_path)

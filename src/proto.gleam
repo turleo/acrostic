@@ -1,4 +1,4 @@
-import gproto/proto.{i32_type, i64_type, len_type, varint_type}
+import pbf/proto.{i32_type, i64_type, len_type, varint_type}
 
 pub type UserStatus {
   Idle

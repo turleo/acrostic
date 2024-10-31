@@ -1,11 +1,8 @@
 import gleam/bit_array
-import gleam/int
 import gleam/io
-import gleam/string
 import gleeunit
 import gleeunit/should
-import gproto/proto
-import gproto/protogen
+import pbf/proto
 
 pub fn main() {
   gleeunit.main()

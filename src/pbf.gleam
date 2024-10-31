@@ -1,9 +1,9 @@
 import gleam/erlang/process
 import gleam/io
-import gproto/protogen
+import pbf/protogen
 
 pub fn main() {
-  io.println("Hello from gproto!")
+  io.println("Hello from pbf!")
 
   let assert Ok(generator) = protogen.start()
   let _ =
