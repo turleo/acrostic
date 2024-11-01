@@ -21,6 +21,7 @@ pub const len_type = 2
 pub const i32_type = 5
 
 // const mask32bit = 0xFFFFFFFF
+
 const mask64bit = 0xFFFFFFFFFFFFFFFF
 
 pub fn encode_key(
@@ -28,14 +29,9 @@ pub fn encode_key(
   field_number field_number: Int,
   wire_type wire_type: Int,
 ) -> BitArray {
-  <<
-    buf:bits,
-    { field_number |> int.bitwise_shift_left(3) |> int.bitwise_or(wire_type) },
-  >>
-}
-
-pub fn decode_key(data: BitArray) -> #(Int, Int) {
-  todo
+  let key =
+    field_number |> int.bitwise_shift_left(3) |> int.bitwise_or(wire_type)
+  buf |> bit_array.append(encode_varint(key))
 }
 
 pub fn encode_i64(n: Float) -> BitArray {
