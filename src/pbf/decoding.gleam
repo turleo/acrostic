@@ -19,6 +19,20 @@ pub fn decode_key(num: Int) -> #(Int, Int) {
   #(field_number, wire_type)
 }
 
+pub fn read_i32(bin: BitArray) -> #(Float, BitArray) {
+  case bin {
+    <<first:float-size(32), rest:bits>> -> #(first, rest)
+    _ -> panic as "can't read i32"
+  }
+}
+
+pub fn read_i64(bin: BitArray) -> #(Float, BitArray) {
+  case bin {
+    <<first:float-size(64), rest:bits>> -> #(first, rest)
+    _ -> panic as "can't read i64"
+  }
+}
+
 pub fn read_varint(bin: BitArray) -> #(Int, BitArray) {
   // [high -> low]
   let #(bytes, bin) = read_varint_bytes(bin, [])
@@ -54,7 +68,6 @@ fn read_varint_bytes(
 fn read_byte(bin: BitArray) -> #(Int, BitArray) {
   case bin {
     <<>> -> #(0, <<>>)
-    <<byte:size(8)>> -> #(byte, <<>>)
     <<byte:size(8), rest:bits>> -> #(byte, rest)
     _ -> panic
   }
