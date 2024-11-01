@@ -6,6 +6,8 @@ pub type UserStatus {
   Gameing
 }
 
+pub const user_status_default = Idle
+
 pub fn encode_user_status(user_status: UserStatus) -> BitArray {
   case user_status {
     Idle -> encoding.encode_varint(0)
@@ -14,13 +16,13 @@ pub fn encode_user_status(user_status: UserStatus) -> BitArray {
   }
 }
 
-pub const user_status_default = Idle
-
 pub type RoomStatus {
   RIdle
   RMatching
   RGameing
 }
+
+pub const room_status_default = RIdle
 
 pub fn encode_room_status(room_status: RoomStatus) -> BitArray {
   case room_status {
@@ -30,12 +32,12 @@ pub fn encode_room_status(room_status: RoomStatus) -> BitArray {
   }
 }
 
-pub const room_status_default = RIdle
-
 // struct start -----------------------------------
 pub type Item {
   Item(id: Int, num: Int, d: Float, b: Bool, s: String)
 }
+
+pub const item_defalut = Item(0, 0, 0.0, False, "")
 
 pub fn encode_item(item: Item) -> BitArray {
   <<>>

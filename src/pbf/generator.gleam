@@ -213,35 +213,62 @@ fn write_structs(structs: List(parser.Message), out_path: String) {
         to: out_path,
         contents: message_to_string(struct, True) <> "}\n\n",
       )
+
+    // default
+    // pub const item_defalut = Item(0, 0)
+    let assert Ok(_) =
+      "pub const {name}_defalut = {value}\n"
+      |> format([
+        #("name", pascal_to_snake(struct.name)),
+        #(
+          "value",
+          struct.fields
+            |> list.map(fn(f) { get_default_value(f.ty) })
+            |> list.fold(struct.name <> "(", fn(a, b) { a <> b <> "," })
+            |> string.append(")"),
+        ),
+      ])
+      |> simplifile.append(to: out_path)
     // encoding gen
     // fn encode_item(item: Item) -> BitArray {
     //   <<>>
     //   |> encoding.encode_int_field(1, item.id)
     //   |> encoding.encode_int_field(2, item.num)
     // }
-    format(
-      "
+    let assert Ok(_) =
+      format(
+        "
 pub fn encode_{name}({name}: {type}) -> BitArray {
   {body}
 }
-
 ",
-      [
-        #("name", pascal_to_snake(struct.name)),
-        #("type", struct.name),
-        #(
-          "body",
-          struct.fields
-            |> list.map(get_field_encoding(
-              _,
-              pascal_to_snake(struct.name) <> ".",
-            ))
-            |> list.fold("<<>>\n", string.append),
-        ),
-      ],
-    )
-    |> simplifile.append(to: out_path)
+        [
+          #("name", pascal_to_snake(struct.name)),
+          #("type", struct.name),
+          #(
+            "body",
+            struct.fields
+              |> list.map(get_field_encoding(
+                _,
+                pascal_to_snake(struct.name) <> ".",
+              ))
+              |> list.fold("<<>>\n", string.append),
+          ),
+        ],
+      )
+      |> simplifile.append(to: out_path)
   })
+}
+
+fn get_default_value(ty: String) -> String {
+  case to_gleam_ty(ty, False) {
+    "Int" -> "0"
+    "Bool" -> "False"
+    "Float" -> "0.0"
+    "String" -> "\"\""
+    // Enum or Struct
+    x -> pascal_to_snake(x) <> "_default"
+  }
 }
 
 //   |> encoding.encode_int_field(1, item.id, varint_type)
@@ -335,8 +362,20 @@ fn write_enums(enums: List(parser.PbEnum), out_path: String) {
     })
     let assert Ok(_) = simplifile.append(to: out_path, contents: "}\n\n")
 
-    // encoding gen
+    // default value
+    // pub const user_status_default = Idle
+    let assert Ok(_) =
+      "pub const {name}_default = {value}\n"
+      |> format([
+        #("name", pascal_to_snake(enum.name)),
+        #("value", case enum.fields |> list.first {
+          Ok(f) -> f.name
+          _ -> panic as { "Invalid empty enum: " <> enum.name }
+        }),
+      ])
+      |> simplifile.append(to: out_path)
 
+    // encoding gen
     // pub fn encode_item(item: Item) -> BitArray {
     //   ...
     // }
@@ -368,19 +407,6 @@ pub fn encode_{name}({name}: {type}) -> BitArray {
           ),
         ],
       )
-      |> simplifile.append(to: out_path)
-    // default value
-    // pub const user_status_default = Idle
-
-    let assert Ok(_) =
-      "pub const {name}_default = {value}\n"
-      |> format([
-        #("name", pascal_to_snake(enum.name)),
-        #("value", case enum.fields |> list.first {
-          Ok(f) -> f.name
-          _ -> panic as { "Invalid empty enum: " <> enum.name }
-        }),
-      ])
       |> simplifile.append(to: out_path)
   })
 }
