@@ -2,7 +2,6 @@
 # You typically do not need to edit this file
 
 packages = [
-  { name = "bitsandbobs", version = "1.1.0", build_tools = ["gleam"], requirements = ["gleam_stdlib"], otp_app = "bitsandbobs", source = "hex", outer_checksum = "FA4A0C0221178711853714031178AF1D269466F1F3CF1E63FD298DD83F9D524C" },
   { name = "filepath", version = "1.0.0", build_tools = ["gleam"], requirements = ["gleam_stdlib"], otp_app = "filepath", source = "hex", outer_checksum = "EFB6FF65C98B2A16378ABC3EE2B14124168C0CE5201553DE652E2644DCFDB594" },
   { name = "glam", version = "2.0.1", build_tools = ["gleam"], requirements = ["gleam_stdlib"], otp_app = "glam", source = "hex", outer_checksum = "66EC3BCD632E51EED029678F8DF419659C1E57B1A93D874C5131FE220DFAD2B2" },
   { name = "gleam_erlang", version = "0.28.0", build_tools = ["gleam"], requirements = ["gleam_stdlib"], otp_app = "gleam_erlang", source = "hex", outer_checksum = "BE551521F708DCE5CB954AFBBDF08519C1C44986521FD40753608825F48FFA9E" },
@@ -16,7 +15,6 @@ packages = [
 ]
 
 [requirements]
-bitsandbobs = { version = ">= 1.1.0 and < 2.0.0" }
 gleam_erlang = { version = ">= 0.28.0 and < 1.0.0" }
 gleam_otp = { version = ">= 0.12.1 and < 1.0.0" }
 gleam_stdlib = { version = ">= 0.34.0 and < 2.0.0" }

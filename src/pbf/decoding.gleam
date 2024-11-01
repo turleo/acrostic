@@ -1,7 +1,5 @@
-import bitsandbobs/ints
 import gleam/bit_array
 import gleam/int
-import gleam/io
 import gleam/list
 import gleam/result
 
@@ -13,6 +11,10 @@ const wire_type_mask = 0b111
 
 pub type DecodeError {
   NoBit
+}
+
+pub fn decode_string(bin: BitArray) -> String {
+  bit_array.to_string(bin) |> result.unwrap("")
 }
 
 pub fn decode_i32(bin: BitArray) -> #(Float, BitArray) {
@@ -34,6 +36,15 @@ pub fn decode_key(bin: BitArray) -> #(Key, BitArray) {
   let wire_type = int.bitwise_and(num, wire_type_mask)
   let field_number = int.bitwise_shift_right(num - wire_type, 3)
   #(Key(field_number, wire_type), bin)
+}
+
+pub fn decode_bool(bin: BitArray) -> #(Bool, BitArray) {
+  let #(num, bin) = decode_varint(bin)
+  case num {
+    0 -> #(False, bin)
+    1 -> #(True, bin)
+    x -> panic as { "Invalid bool: " <> int.to_string(x) }
+  }
 }
 
 pub fn decode_varint(bin: BitArray) -> #(Int, BitArray) {
