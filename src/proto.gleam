@@ -14,6 +14,8 @@ pub fn encode_user_status(user_status: UserStatus) -> BitArray {
   }
 }
 
+pub const user_status_default = Idle
+
 pub type RoomStatus {
   RIdle
   RMatching
@@ -27,6 +29,8 @@ pub fn encode_room_status(room_status: RoomStatus) -> BitArray {
     RGameing -> encoding.encode_varint(2)
   }
 }
+
+pub const room_status_default = RIdle
 
 // struct start -----------------------------------
 pub type Item {

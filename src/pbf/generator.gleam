@@ -340,34 +340,48 @@ fn write_enums(enums: List(parser.PbEnum), out_path: String) {
     // pub fn encode_item(item: Item) -> BitArray {
     //   ...
     // }
-    format(
-      "
+    let assert Ok(_) =
+      format(
+        "
 pub fn encode_{name}({name}: {type}) -> BitArray {
   {body}
 }
 
 ",
-      [
+        [
+          #("name", pascal_to_snake(enum.name)),
+          #("type", enum.name),
+          #(
+            "body",
+            enum.fields
+              |> list.map(fn(f) {
+                format("    {key} -> encoding.encode_varint({value})\n", [
+                  #("key", f.name),
+                  #("value", int.to_string(f.tag)),
+                ])
+              })
+              |> list.fold(
+                "case " <> pascal_to_snake(enum.name) <> " {\n",
+                string.append,
+              )
+              |> string.append("  }"),
+          ),
+        ],
+      )
+      |> simplifile.append(to: out_path)
+    // default value
+    // pub const user_status_default = Idle
+
+    let assert Ok(_) =
+      "pub const {name}_default = {value}\n"
+      |> format([
         #("name", pascal_to_snake(enum.name)),
-        #("type", enum.name),
-        #(
-          "body",
-          enum.fields
-            |> list.map(fn(f) {
-              format("    {key} -> encoding.encode_varint({value})\n", [
-                #("key", f.name),
-                #("value", int.to_string(f.tag)),
-              ])
-            })
-            |> list.fold(
-              "case " <> pascal_to_snake(enum.name) <> " {\n",
-              string.append,
-            )
-            |> string.append("  }"),
-        ),
-      ],
-    )
-    |> simplifile.append(to: out_path)
+        #("value", case enum.fields |> list.first {
+          Ok(f) -> f.name
+          _ -> panic as { "Invalid empty enum: " <> enum.name }
+        }),
+      ])
+      |> simplifile.append(to: out_path)
   })
 }
 

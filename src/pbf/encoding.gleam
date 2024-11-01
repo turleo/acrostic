@@ -34,6 +34,10 @@ pub fn encode_key(
   >>
 }
 
+pub fn decode_key(data: BitArray) -> #(Int, Int) {
+  todo
+}
+
 pub fn encode_i64(n: Float) -> BitArray {
   <<n:float-little-size(64)>>
 }
