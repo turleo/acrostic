@@ -5,40 +5,44 @@ import gleam/io
 import gleam/list
 import gleam/result
 
-// import gleam/result.{Result}
+pub type Key {
+  Key(field_number: Int, wire_type: Int)
+}
 
-const mask_wire_type = 0b111
+const wire_type_mask = 0b111
 
 pub type DecodeError {
   NoBit
 }
 
-pub fn decode_key(num: Int) -> #(Int, Int) {
-  let wire_type = int.bitwise_and(num, mask_wire_type)
-  let field_number = int.bitwise_shift_right(num - wire_type, 3)
-  #(field_number, wire_type)
-}
-
-pub fn read_i32(bin: BitArray) -> #(Float, BitArray) {
+pub fn decode_i32(bin: BitArray) -> #(Float, BitArray) {
   case bin {
     <<first:float-size(32), rest:bits>> -> #(first, rest)
     _ -> panic as "can't read i32"
   }
 }
 
-pub fn read_i64(bin: BitArray) -> #(Float, BitArray) {
+pub fn decode_i64(bin: BitArray) -> #(Float, BitArray) {
   case bin {
     <<first:float-size(64), rest:bits>> -> #(first, rest)
     _ -> panic as "can't read i64"
   }
 }
 
-pub fn read_varint(bin: BitArray) -> #(Int, BitArray) {
+pub fn decode_key(bin: BitArray) -> #(Key, BitArray) {
+  let #(num, bin) = decode_varint(bin)
+  let wire_type = int.bitwise_and(num, wire_type_mask)
+  let field_number = int.bitwise_shift_right(num - wire_type, 3)
+  #(Key(field_number, wire_type), bin)
+}
+
+pub fn decode_varint(bin: BitArray) -> #(Int, BitArray) {
   // [high -> low]
-  let #(bytes, bin) = read_varint_bytes(bin, [])
+  let #(bin, bytes) = read_varint_bytes(bin, [])
   #(calc_varint(bytes, 0), bin)
 }
 
+// util ------------------------------------------------------------------------
 fn calc_varint(bytes: List(Int), sum: Int) -> Int {
   case list.length(bytes) {
     len if len > 0 -> {
@@ -52,23 +56,23 @@ fn calc_varint(bytes: List(Int), sum: Int) -> Int {
 fn read_varint_bytes(
   bin: BitArray,
   results: List(Int),
-) -> #(List(Int), BitArray) {
+) -> #(BitArray, List(Int)) {
   case read_byte(bin) {
-    #(0, bin) -> #(results, bin)
-    #(byte, bin) -> {
+    #(bin, 0) -> #(bin, results)
+    #(bin, byte) -> {
       case int.bitwise_and(byte, 0x80) {
         flag if flag > 0 ->
           read_varint_bytes(bin, [int.bitwise_and(byte, 0x7F), ..results])
-        _ -> #([byte, ..results], bin)
+        _ -> #(bin, [byte, ..results])
       }
     }
   }
 }
 
-fn read_byte(bin: BitArray) -> #(Int, BitArray) {
+fn read_byte(bin: BitArray) -> #(BitArray, Int) {
   case bin {
-    <<>> -> #(0, <<>>)
-    <<byte:size(8), rest:bits>> -> #(byte, rest)
+    <<>> -> #(<<>>, 0)
+    <<byte:size(8), rest:bits>> -> #(rest, byte)
     _ -> panic
   }
 }
