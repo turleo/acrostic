@@ -333,6 +333,7 @@ fn get_encoder_and_packed(ty: String) -> #(String, String) {
     "Float" -> #("encoding.encode_" <> float_wire_type(ty), "True")
     "String" -> #("encoding.encode_string", "False")
     // Enum or Struct
+    // todo: Enum is Int, is packed
     x -> #("encode_" <> pascal_to_snake(x), "False")
   }
 }

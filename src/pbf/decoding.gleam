@@ -13,23 +13,45 @@ pub type DecodeError {
   NoBit
 }
 
-pub fn decode_string(bin: BitArray) -> String {
-  bit_array.to_string(bin) |> result.unwrap("")
-}
-
-pub fn decode_i32(bin: BitArray) -> #(Float, BitArray) {
+// decoder
+pub fn decode_i64(bin: BitArray) -> Float {
   case bin {
-    <<first:float-size(32), rest:bits>> -> #(first, rest)
-    _ -> panic as "can't read i32"
+    <<n:float-size(64)>> -> n
+    _ -> 0.0
   }
 }
 
-pub fn decode_i64(bin: BitArray) -> #(Float, BitArray) {
+pub fn decode_i32(bin: BitArray) -> Float {
   case bin {
-    <<first:float-size(64), rest:bits>> -> #(first, rest)
-    _ -> panic as "can't read i64"
+    <<n:float-size(32)>> -> n
+    _ -> 0.0
   }
 }
+
+pub fn decode_string(bin: BitArray) -> #(String, BitArray) {
+  let #(len, bin) = decode_varint(bin)
+  case read_bytes(bin, len) {
+    Ok(#(first, second)) -> #(
+      first |> bit_array.to_string |> result.unwrap(""),
+      second,
+    )
+    _ -> panic
+  }
+}
+
+// pub fn decode_i32(bin: BitArray) -> #(Float, BitArray) {
+//   case bin {
+//     <<first:float-size(32), rest:bits>> -> #(first, rest)
+//     _ -> panic as "can't read i32"
+//   }
+// }
+
+// pub fn decode_i64(bin: BitArray) -> #(Float, BitArray) {
+//   case bin {
+//     <<first:float-size(64), rest:bits>> -> #(first, rest)
+//     _ -> panic as "can't read i64"
+//   }
+// }
 
 pub fn decode_key(bin: BitArray) -> #(Key, BitArray) {
   let #(num, bin) = decode_varint(bin)
@@ -77,6 +99,21 @@ fn read_varint_bytes(
         _ -> #(bin, [byte, ..results])
       }
     }
+  }
+}
+
+pub fn read_bytes(
+  bin: BitArray,
+  length: Int,
+) -> Result(#(BitArray, BitArray), Nil) {
+  case bit_array.byte_size(bin) > length {
+    True ->
+      Ok(#(
+        bit_array.slice(bin, 0, length) |> result.unwrap(<<>>),
+        bit_array.slice(bin, length, bit_array.byte_size(bin) - length)
+          |> result.unwrap(<<>>),
+      ))
+    False -> Error(Nil)
   }
 }
 

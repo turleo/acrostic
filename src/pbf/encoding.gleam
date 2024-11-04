@@ -67,6 +67,7 @@ pub fn encode_string(s: String) -> BitArray {
   <<s:utf8>>
 }
 
+// encode field
 pub fn encode_int_field(
   buf: BitArray,
   field_number: Int,
