@@ -1,4 +1,3 @@
-import pbf/decoding
 import pbf/encoding.{i32_type, i64_type, len_type, varint_type}
 
 pub type UserStatus {

@@ -14,11 +14,10 @@ pub fn main() {
 
 pub fn decoding_test() {
   let bin = encoding.encode_key(<<>>, 123_456_789, 5)
-  let #(key, _bin) = decoding.read_varint(bin)
-  let #(field_number, wire_type) = decoding.decode_key(key)
+  let #(key, _bin) = decoding.decode_key(bin)
 
-  io.debug(field_number)
-  io.debug(wire_type)
+  io.debug(key.field_number)
+  io.debug(key.wire_type)
 }
 // pub fn pb_message_test() {
 //   encoding.encode_i32(1.0)
