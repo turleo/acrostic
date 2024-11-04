@@ -49,23 +49,6 @@ pub fn encode_item(item: Item) -> BitArray {
   |> encoding.encode_len_field(5, item.s, encoding.encode_string)
 }
 
-// pub fn decode_item(bin: BitArray, item: Item) -> Item {
-//   case bin {
-//     <<>> -> item
-//     _ -> {
-//       let #(filed_number, wire_type) = decoding.decode_key()
-//       case filed_number {
-//         1 -> {
-//           let #(id, bin) = decoding.decode_varint(bin)
-//           decode_item(bin, Item(..item, id: id))
-//         }
-//         _ -> todo
-//       }
-//       todo
-//     }
-//   }
-// }
-
 // messages start -----------------------------------
 pub type Message {
   ReqUseItem(session: Int, item: Item)
