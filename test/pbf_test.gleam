@@ -6,7 +6,8 @@ import gleeunit
 import gleeunit/should
 import pbf/decoding
 import pbf/encoding
-import proto.{Hello, Item, ReqUseItem, ResUseItem, TestFloat}
+
+// import proto.{Hello, Item, ReqUseItem, ResUseItem, TestFloat}
 
 pub fn main() {
   gleeunit.main()

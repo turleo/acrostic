@@ -100,7 +100,10 @@ fn generate_proto(text: String, out_path: String) {
 
   let assert Ok(_) = simplifile.delete(out_path)
   let assert Ok(_) =
-    "import pbf/encoding.{i32_type, i64_type, len_type, varint_type}\n\n"
+    "
+import pbf/encoding.{i32_type, i64_type, len_type, varint_type}
+import pbf/decoding
+"
     |> simplifile.write(to: out_path)
 
   write_enums(enums, out_path)
@@ -385,7 +388,6 @@ fn write_enums(enums: List(parser.PbEnum), out_path: String) {
 pub fn encode_{name}({name}: {type}) -> BitArray {
   {body}
 }
-
 ",
         [
           #("name", pascal_to_snake(enum.name)),
@@ -404,6 +406,35 @@ pub fn encode_{name}({name}: {type}) -> BitArray {
                 string.append,
               )
               |> string.append("  }"),
+          ),
+        ],
+      )
+      |> simplifile.append(to: out_path)
+    // decoding gen
+
+    let assert Ok(_) =
+      format(
+        "
+pub fn decode_{name}(buf: BitArray) -> #({type}, BitArray) {
+  let #(num, buf) = decoding.decode_varint(buf)
+  {body}
+}
+    ",
+        [
+          #("name", pascal_to_snake(enum.name)),
+          #("type", enum.name),
+          #(
+            "body",
+            enum.fields
+              |> list.map(fn(f) {
+                format("    {key} -> {value}\n", [
+                  #("key", int.to_string(f.tag)),
+                  #("value", "#(" <> f.name <> ", buf)"),
+                ])
+              })
+              |> list.fold("case num {\n", string.append)
+              |> string.append("  _ -> panic\n")
+              |> string.append("  }\n"),
           ),
         ],
       )

@@ -1,3 +1,10 @@
+// pub fn decode_user_status(bin: BitArray) -> #(UserStatus, BitArray) {
+//   let #(num, bin) = decoding.decode_varint(bin)
+//   case num {
+//     1 -> #(Idle, bin)
+//     _ -> todo
+//   }
+// }
 // pub fn decode_item(bin: BitArray, item: Item) -> Item {
 //   case bin {
 //     <<>> -> item

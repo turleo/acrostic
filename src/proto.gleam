@@ -1,3 +1,4 @@
+import pbf/decoding
 import pbf/encoding.{i32_type, i64_type, len_type, varint_type}
 
 pub type UserStatus {
@@ -16,6 +17,16 @@ pub fn encode_user_status(user_status: UserStatus) -> BitArray {
   }
 }
 
+pub fn decode_user_status(buf: BitArray) -> #(UserStatus, BitArray) {
+  let #(num, buf) = decoding.decode_varint(buf)
+  case num {
+    0 -> #(Idle, buf)
+    1 -> #(Matching, buf)
+    2 -> #(Gameing, buf)
+    _ -> panic
+  }
+}
+
 pub type RoomStatus {
   RIdle
   RMatching
@@ -29,6 +40,16 @@ pub fn encode_room_status(room_status: RoomStatus) -> BitArray {
     RIdle -> encoding.encode_varint(0)
     RMatching -> encoding.encode_varint(1)
     RGameing -> encoding.encode_varint(2)
+  }
+}
+
+pub fn decode_room_status(buf: BitArray) -> #(RoomStatus, BitArray) {
+  let #(num, buf) = decoding.decode_varint(buf)
+  case num {
+    0 -> #(RIdle, buf)
+    1 -> #(RMatching, buf)
+    2 -> #(RGameing, buf)
+    _ -> panic
   }
 }
 
