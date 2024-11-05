@@ -416,8 +416,8 @@ pub fn encode_{name}({name}: {type}) -> BitArray {
     let assert Ok(_) =
       format(
         "
-pub fn decode_{name}(buf: BitArray) -> #({type}, BitArray) {
-  let #(num, buf) = decoding.decode_varint(buf)
+pub fn read_{name}(binary: BitArray) -> #({type}, BitArray) {
+  let #(num, binary) = decoding.read_varint(binary)
   {body}
 }
     ",
@@ -430,7 +430,7 @@ pub fn decode_{name}(buf: BitArray) -> #({type}, BitArray) {
               |> list.map(fn(f) {
                 format("    {key} -> {value}\n", [
                   #("key", int.to_string(f.tag)),
-                  #("value", "#(" <> f.name <> ", buf)"),
+                  #("value", "#(" <> f.name <> ", binary)"),
                 ])
               })
               |> list.fold("case num {\n", string.append)

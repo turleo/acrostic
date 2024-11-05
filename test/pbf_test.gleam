@@ -15,7 +15,7 @@ pub fn main() {
 
 pub fn decoding_test() {
   let bin = encoding.encode_key(<<>>, 123_456_789, 5)
-  let #(key, _bin) = decoding.decode_key(bin)
+  let #(key, _bin) = decoding.read_key(bin)
 
   io.debug(key.field_number)
   io.debug(key.wire_type)

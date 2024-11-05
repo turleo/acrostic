@@ -17,12 +17,12 @@ pub fn encode_user_status(user_status: UserStatus) -> BitArray {
   }
 }
 
-pub fn decode_user_status(buf: BitArray) -> #(UserStatus, BitArray) {
-  let #(num, buf) = decoding.decode_varint(buf)
+pub fn read_user_status(binary: BitArray) -> #(UserStatus, BitArray) {
+  let #(num, binary) = decoding.read_varint(binary)
   case num {
-    0 -> #(Idle, buf)
-    1 -> #(Matching, buf)
-    2 -> #(Gameing, buf)
+    0 -> #(Idle, binary)
+    1 -> #(Matching, binary)
+    2 -> #(Gameing, binary)
     _ -> panic
   }
 }
@@ -43,12 +43,12 @@ pub fn encode_room_status(room_status: RoomStatus) -> BitArray {
   }
 }
 
-pub fn decode_room_status(buf: BitArray) -> #(RoomStatus, BitArray) {
-  let #(num, buf) = decoding.decode_varint(buf)
+pub fn read_room_status(binary: BitArray) -> #(RoomStatus, BitArray) {
+  let #(num, binary) = decoding.read_varint(binary)
   case num {
-    0 -> #(RIdle, buf)
-    1 -> #(RMatching, buf)
-    2 -> #(RGameing, buf)
+    0 -> #(RIdle, binary)
+    1 -> #(RMatching, binary)
+    2 -> #(RGameing, binary)
     _ -> panic
   }
 }
