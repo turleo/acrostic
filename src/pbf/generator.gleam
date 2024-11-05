@@ -101,6 +101,7 @@ fn generate_proto(text: String, out_path: String) {
   let assert Ok(_) = simplifile.delete(out_path)
   let assert Ok(_) =
     "
+    import gleam/list
     import pbf/encoding.{i32_type, i64_type, len_type, varint_type}
     import pbf/decoding
     "
@@ -140,12 +141,16 @@ fn generate_proto(text: String, out_path: String) {
 //   Ping(msg: String)
 //   Pong(msg: String)
 // }
+
+// f.name <> ": " <> to_gleam_ty(f.ty, f.repeated)
 fn write_messages(messages: List(parser.Message), out_path: String) {
   let assert Ok(_) =
     simplifile.append(to: out_path, contents: "pub type Message {\n")
   let assert Ok(_) =
     messages
-    |> list.map(message_to_string(_, True))
+    |> list.map(message_to_string(_, fn(field) {
+      field.name <> ": " <> to_gleam_ty(field.ty, field.repeated)
+    }))
     |> list.fold("", string.append)
     |> simplifile.append(to: out_path)
 
@@ -162,7 +167,7 @@ fn write_messages(messages: List(parser.Message), out_path: String) {
           }
         ",
         [
-          #("message", message_to_string(msg, False)),
+          #("message", message_to_string(msg, fn(f) { f.name })),
           #(
             "fields",
             msg.fields
@@ -227,12 +232,28 @@ fn get_message_case_code(msg: parser.Message) -> String {
       [
         #("reader", get_reader_string(f)),
         #("field_number", int.to_string(f.tag)),
-        #("field_name", f.name),
-        #("message", message_to_string(msg, False)),
+        #("field_name", {
+          case f.repeated {
+            True -> "value"
+            False -> f.name
+          }
+        }),
+        #(
+          "message",
+          message_to_string(msg, fn(f2) {
+            case f.name == f2.name, f2.repeated {
+              True, True ->
+                format("list.append({field_name}, [value])", [
+                  #("field_name", f2.name),
+                ])
+              _, _ -> f2.name
+            }
+          }),
+        ),
       ],
     )
   })
-  |> list.fold(message_to_string(msg, False) <> "
+  |> list.fold(message_to_string(msg, fn(f) { f.name }) <> "
     -> {
       let #(key, binary) = decoding.read_key(binary)
       case key.field_number {
@@ -261,7 +282,10 @@ fn write_structs(structs: List(parser.Message), out_path: String) {
     let assert Ok(_) =
       simplifile.append(
         to: out_path,
-        contents: message_to_string(struct, True) <> "}\n\n",
+        contents: message_to_string(struct, fn(field) {
+          field.name <> ": " <> to_gleam_ty(field.ty, field.repeated)
+        })
+          <> "}\n\n",
       )
 
     // default
@@ -604,19 +628,17 @@ fn get_messages(text: String, lexer, parser) {
 }
 
 // "  Item(id: Int, num: Int)\n"
-fn message_to_string(message: parser.Message, type_suffix: Bool) -> String {
+fn message_to_string(
+  message: parser.Message,
+  convert: fn(parser.Field) -> String,
+) -> String {
   case list.length(message.fields) > 0 {
     True -> {
       format("  {name}({body})\n", [
         #("name", message.name),
         #("body", {
           message.fields
-          |> list.map(fn(f) {
-            case type_suffix {
-              True -> f.name <> ": " <> to_gleam_ty(f.ty, f.repeated)
-              False -> f.name
-            }
-          })
+          |> list.map(convert)
           |> list.fold("", fn(a, b) { a <> b <> ", " })
           |> string.drop_right(2)
         }),
