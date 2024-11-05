@@ -9,28 +9,34 @@ pub type Key {
 
 const wire_type_mask = 0b111
 
-pub type DecodeError {
-  NoBit
-}
-
-// decoder
-pub fn decode_i64(bin: BitArray) -> Float {
-  case bin {
-    <<n:float-size(64)>> -> n
-    _ -> 0.0
+// decoder start -------------------------------------------
+pub fn decode_to_i64(binary: BitArray) -> Result(Float, String) {
+  case binary {
+    <<n:float-size(64)>> -> Ok(n)
+    _ -> Error("unable decode to i64")
   }
 }
 
-pub fn decode_i32(bin: BitArray) -> Float {
-  case bin {
-    <<n:float-size(32)>> -> n
-    _ -> 0.0
+pub fn decode_to_i32(binary: BitArray) -> Result(Float, String) {
+  case binary {
+    <<n:float-size(32)>> -> Ok(n)
+    _ -> Error("unable decode to i32")
   }
 }
 
-pub fn decode_string(bin: BitArray) -> #(String, BitArray) {
-  let #(len, bin) = decode_varint(bin)
-  case read_bytes(bin, len) {
+pub fn decode_to_string(binary: BitArray) -> Result(String, String) {
+  case binary |> bit_array.to_string {
+    Ok(str) -> Ok(str)
+    Error(_) -> Error("unable decode to string")
+  }
+}
+
+// deocder ended -------------------------------------------
+
+// reader --------------------------------------------------
+pub fn read_string(binary: BitArray) -> #(String, BitArray) {
+  let #(len, binary) = read_varint(binary)
+  case read_bytes(binary, len) {
     Ok(#(first, second)) -> #(
       first |> bit_array.to_string |> result.unwrap(""),
       second,
@@ -39,37 +45,37 @@ pub fn decode_string(bin: BitArray) -> #(String, BitArray) {
   }
 }
 
-// pub fn decode_i32(bin: BitArray) -> #(Float, BitArray) {
-//   case bin {
-//     <<first:float-size(32), rest:bits>> -> #(first, rest)
-//     _ -> panic as "can't read i32"
-//   }
-// }
-
-// pub fn decode_i64(bin: BitArray) -> #(Float, BitArray) {
-//   case bin {
-//     <<first:float-size(64), rest:bits>> -> #(first, rest)
-//     _ -> panic as "can't read i64"
-//   }
-// }
-
-pub fn decode_key(bin: BitArray) -> #(Key, BitArray) {
-  let #(num, bin) = decode_varint(bin)
-  let wire_type = int.bitwise_and(num, wire_type_mask)
-  let field_number = int.bitwise_shift_right(num - wire_type, 3)
-  #(Key(field_number, wire_type), bin)
+pub fn read_i32(binary: BitArray) -> #(Float, BitArray) {
+  case binary {
+    <<first:float-size(32), rest:bits>> -> #(first, rest)
+    _ -> panic as "can't read i32"
+  }
 }
 
-pub fn decode_bool(bin: BitArray) -> #(Bool, BitArray) {
-  let #(num, bin) = decode_varint(bin)
+pub fn read_i64(binary: BitArray) -> #(Float, BitArray) {
+  case binary {
+    <<first:float-size(64), rest:bits>> -> #(first, rest)
+    _ -> panic as "can't read i64"
+  }
+}
+
+pub fn read_key(binary: BitArray) -> #(Key, BitArray) {
+  let #(num, binary) = read_varint(binary)
+  let wire_type = int.bitwise_and(num, wire_type_mask)
+  let field_number = int.bitwise_shift_right(num - wire_type, 3)
+  #(Key(field_number, wire_type), binary)
+}
+
+pub fn read_bool(binary: BitArray) -> #(Bool, BitArray) {
+  let #(num, binary) = read_varint(binary)
   case num {
-    0 -> #(False, bin)
-    1 -> #(True, bin)
+    0 -> #(False, binary)
+    1 -> #(True, binary)
     x -> panic as { "Invalid bool: " <> int.to_string(x) }
   }
 }
 
-pub fn decode_varint(bin: BitArray) -> #(Int, BitArray) {
+pub fn read_varint(bin: BitArray) -> #(Int, BitArray) {
   // [high -> low]
   let #(bin, bytes) = read_varint_bytes(bin, [])
   #(calc_varint(bytes, 0), bin)
