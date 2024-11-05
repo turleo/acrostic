@@ -1,3 +1,4 @@
+import gleam/list
 import pbf/decoding
 import pbf/encoding.{i32_type, i64_type, len_type, varint_type}
 
@@ -139,6 +140,86 @@ pub fn encode(msg: Message) -> BitArray {
       <<>>
       |> encoding.encode_float_field(1, f, i32_type)
       |> encoding.encode_float_field(2, d, i64_type)
+    }
+  }
+}
+
+pub fn decode_message(msg: Message, binary: BitArray) -> Message {
+  case msg {
+    ReqUseItem(session, item) -> {
+      let #(key, binary) = decoding.read_key(binary)
+      case key.field_number {
+        1 -> {
+          let #(session, binary) = decoding.read_varint(binary)
+          decode_message(ReqUseItem(session, item), binary)
+        }
+
+        2 -> {
+          let #(item, binary) =
+            decoding.read_len_field(binary, decode_to_item(_, item_defalut))
+          decode_message(ReqUseItem(session, item), binary)
+        }
+
+        _ -> panic
+      }
+    }
+    ResUseItem(session, nums, items) -> {
+      let #(key, binary) = decoding.read_key(binary)
+      case key.field_number {
+        1 -> {
+          let #(session, binary) = decoding.read_varint(binary)
+          decode_message(ResUseItem(session, nums, items), binary)
+        }
+
+        2 -> {
+          let #(nums, binary) =
+            decoding.read_len_packed_field(binary, decoding.read_varint)
+          decode_message(ResUseItem(session, nums, items), binary)
+        }
+
+        6 -> {
+          let #(item, binary) =
+            decoding.read_len_field(binary, decode_to_item(_, item_defalut))
+          decode_message(
+            ResUseItem(session, nums, list.append(items, [item])),
+            binary,
+          )
+        }
+
+        _ -> panic
+      }
+    }
+    Hello(session, texts) -> {
+      let #(key, binary) = decoding.read_key(binary)
+      case key.field_number {
+        1 -> {
+          let #(session, binary) = decoding.read_varint(binary)
+          decode_message(Hello(session, texts), binary)
+        }
+
+        2 -> {
+          let #(texts, binary) = decoding.read_string(binary)
+          decode_message(Hello(session, texts), binary)
+        }
+
+        _ -> panic
+      }
+    }
+    TestFloat(f, d) -> {
+      let #(key, binary) = decoding.read_key(binary)
+      case key.field_number {
+        1 -> {
+          let #(f, binary) = decoding.read_i32(binary)
+          decode_message(TestFloat(f, d), binary)
+        }
+
+        2 -> {
+          let #(d, binary) = decoding.read_i64(binary)
+          decode_message(TestFloat(f, d), binary)
+        }
+
+        _ -> panic
+      }
     }
   }
 }

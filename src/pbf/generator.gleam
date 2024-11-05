@@ -150,8 +150,8 @@ fn write_messages(messages: List(parser.Message), out_path: String) {
     |> simplifile.append(to: out_path)
 
   let assert Ok(_) = simplifile.append(to: out_path, contents: "}\n\n")
-  // encoding gen
 
+  // encoding gen
   let body =
     messages
     |> list.map(fn(msg) {
@@ -174,15 +174,76 @@ fn write_messages(messages: List(parser.Message), out_path: String) {
     })
     |> list.fold("", string.append)
 
-  "
+  let assert Ok(_) =
+    "
     pub fn encode(msg: Message) -> BitArray {
     case msg {
         {body}
     }
   }
   "
-  |> format([#("body", body)])
+    |> format([#("body", body)])
+    |> simplifile.append(to: out_path)
+
+  // decoding
+  messages
+  |> list.map(fn(msg) { get_message_case_code(msg) })
+  |> list.fold(
+    "
+    pub fn decode_message(msg: Message, binary: BitArray) -> Message {
+    case msg {
+  ",
+    string.append,
+  )
+  |> string.append(
+    "
+      }
+    }
+  ",
+  )
   |> simplifile.append(to: out_path)
+}
+
+//     Hello(session, texts) -> {
+//       let #(key, bin) = decoding.decode_key(bin)
+//       case key.field_number {
+//         1 -> {
+//           let #(session, bin) = decoding.decode_varint(bin)
+//           decode_message(Hello(session, texts), bin)
+//         }
+//         _ -> todo
+//       }
+//     }
+fn get_message_case_code(msg: parser.Message) -> String {
+  msg.fields
+  |> list.map(fn(f) {
+    format(
+      "
+        {field_number} -> {
+          let #({field_name}, binary) = {reader}
+          decode_message({message}, binary)
+        }
+      ",
+      [
+        #("reader", get_reader_string(f)),
+        #("field_number", int.to_string(f.tag)),
+        #("field_name", f.name),
+        #("message", message_to_string(msg, False)),
+      ],
+    )
+  })
+  |> list.fold(message_to_string(msg, False) <> "
+    -> {
+      let #(key, binary) = decoding.read_key(binary)
+      case key.field_number {
+  ", string.append)
+  |> string.append(
+    "
+          _ -> panic
+      }
+    }
+  ",
+  )
 }
 
 // pub type Item {
