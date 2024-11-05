@@ -69,6 +69,43 @@ pub fn encode_item(item: Item) -> BitArray {
   |> encoding.encode_len_field(5, item.s, encoding.encode_string)
 }
 
+pub fn decode_to_item(binary: BitArray, item: Item) -> Result(Item, String) {
+  case binary {
+    <<>> -> Ok(item)
+    _ -> {
+      let #(key, binary) = decoding.read_key(binary)
+      case key.field_number {
+        1 -> {
+          let #(id, binary) = decoding.read_varint(binary)
+          decode_to_item(binary, Item(..item, id: id))
+        }
+
+        2 -> {
+          let #(num, binary) = decoding.read_varint(binary)
+          decode_to_item(binary, Item(..item, num: num))
+        }
+
+        3 -> {
+          let #(d, binary) = decoding.read_i64(binary)
+          decode_to_item(binary, Item(..item, d: d))
+        }
+
+        4 -> {
+          let #(b, binary) = decoding.read_bool(binary)
+          decode_to_item(binary, Item(..item, b: b))
+        }
+
+        5 -> {
+          let #(s, binary) = decoding.read_string(binary)
+          decode_to_item(binary, Item(..item, s: s))
+        }
+
+        _ -> panic
+      }
+    }
+  }
+}
+
 // messages start -----------------------------------
 pub type Message {
   ReqUseItem(session: Int, item: Item)

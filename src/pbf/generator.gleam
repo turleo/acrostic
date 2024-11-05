@@ -246,8 +246,88 @@ fn write_structs(structs: List(parser.Message), out_path: String) {
         ],
       )
       |> simplifile.append(to: out_path)
+    // decoding gen
+    let assert Ok(_) =
+      format(
+        "
+      pub fn decode_to_{name}(binary: BitArray, {name}: {typename}) -> Result({typename}, String) {
+        case binary {
+          <<>> -> Ok({name})
+          _ -> {
+            let #(key, binary) = decoding.read_key(binary)
+            case key.field_number {
+              {body}
+                _ -> panic
+              }
+            }
+          }
+        }
+      ",
+        [
+          #("name", pascal_to_snake(struct.name)),
+          #("typename", struct.name),
+          #(
+            "body",
+            struct.fields
+              |> list.map(fn(f) {
+                format(
+                  "
+                  {field_number} -> {
+                    let #({field_name}, binary) = {reader}
+                    decode_to_{name}(binary, {typename}(..{name}, {field_name}: {field_name}))
+                  }
+                ",
+                  [
+                    #("name", pascal_to_snake(struct.name)),
+                    #("typename", struct.name),
+                    #("reader", get_reader_string(f)),
+                    #("field_number", int.to_string(f.tag)),
+                    #("field_name", f.name),
+                  ],
+                )
+              })
+              |> list.fold("", string.append),
+          ),
+        ],
+      )
+      |> simplifile.append(to: out_path)
   })
 }
+
+// fn to_gleam_ty(ty: String, repeated: Bool) -> String {
+//   let ty = case ty {
+//     // string
+//     "string" -> "String"
+//     // varint
+//     "int32" | "int64" | "uint32" | "uint64" -> "Int"
+//     "bool" -> "Bool"
+//     // i64
+//     "fixed64" | "sfixed64" | "double" -> "Float"
+//     // i32
+//     "fixed32" | "sfixed32" | "float" -> "Float"
+//     // Custom Type (Struct | Enum)
+//     x -> x
+//   }
+// decoding.decode_varint(binary)
+fn get_reader_string(field: parser.Field) -> String {
+  case field.ty {
+    "string" -> "decoding.read_string(binary)"
+    "int32" | "int64" | "uint32" | "uint64" -> "decoding.read_varint(binary)"
+    "bool" -> "decoding.read_bool(binary)"
+    "fixed64" | "sfixed64" | "double" -> "decoding.read_i64(binary)"
+    "fixed32" | "sfixed32" | "float" -> "decoding.read_i32(binary)"
+    // Custom Type (Enum)
+    ty -> "read_" <> pascal_to_snake(ty) <> "(binary)"
+  }
+}
+
+// fn get_len_docoder_string(field: parser.Field) -> String {
+//   case field.ty {
+//     "string" -> "decoding.decode_to_string"
+//     // Custom Type (Struct)
+//     ty -> "decode_to_" <> ty
+//   }
+// }
 
 fn get_default_value(ty: String) -> String {
   case to_gleam_ty(ty, False) {

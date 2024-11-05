@@ -9,20 +9,21 @@ pub type Key {
 
 const wire_type_mask = 0b111
 
+// len_type decoder (string struct)
 // decoder start -------------------------------------------
-pub fn decode_to_i64(binary: BitArray) -> Result(Float, String) {
-  case binary {
-    <<n:float-size(64)>> -> Ok(n)
-    _ -> Error("unable decode to i64")
-  }
-}
+// pub fn decode_to_i64(binary: BitArray) -> Result(Float, String) {
+//   case binary {
+//     <<n:float-size(64)>> -> Ok(n)
+//     _ -> Error("unable decode to i64")
+//   }
+// }
 
-pub fn decode_to_i32(binary: BitArray) -> Result(Float, String) {
-  case binary {
-    <<n:float-size(32)>> -> Ok(n)
-    _ -> Error("unable decode to i32")
-  }
-}
+// pub fn decode_to_i32(binary: BitArray) -> Result(Float, String) {
+//   case binary {
+//     <<n:float-size(32)>> -> Ok(n)
+//     _ -> Error("unable decode to i32")
+//   }
+// }
 
 pub fn decode_to_string(binary: BitArray) -> Result(String, String) {
   case binary |> bit_array.to_string {
@@ -81,8 +82,7 @@ pub fn read_varint(binary: BitArray) -> #(Int, BitArray) {
   #(calc_varint(bytes, 0), binary)
 }
 
-// packed? Gleam: (Int Bool Float Enum) (wire_type: varint i32 i64)
-// 
+// string struct
 pub fn read_len_field(
   binary: BitArray,
   decoder: fn(BitArray) -> Result(a, String),
@@ -93,6 +93,7 @@ pub fn read_len_field(
   #(r, rest)
 }
 
+// packed? Gleam: (Int Bool Float Enum) (wire_type: varint i32 i64)
 pub fn read_len_packed_field(
   binary: BitArray,
   reader: fn(BitArray) -> #(a, BitArray),

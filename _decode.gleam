@@ -41,7 +41,10 @@ pub fn decode_to_item(bin: BitArray, item: Item) -> Result(Item, String) {
       let #(key, bin) = decoding.read_key(bin)
       case key.filed_number {
         1 -> {
-          let #(id, bin) = decoding.decode_varint(bin)
+          let #(id, bin) = case key.wire_type {
+            2 -> decodeing.read_len_field(bin, decodeing.decode_to_int)
+            _ -> decoding.read_varint(bin)
+          }
           decode_item(bin, Item(..item, id: id))
         }
         2 -> {
