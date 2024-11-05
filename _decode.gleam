@@ -34,12 +34,12 @@ Item {
     items: Item
 }
 
-pub fn decode_item(bin: BitArray, item: Item) -> Item {
+pub fn decode_to_item(bin: BitArray, item: Item) -> Result(Item, String) {
   case bin {
     <<>> -> item
     _ -> {
-      let #(filed_number, wire_type) = decoding.decode_key()
-      case filed_number {
+      let #(key, bin) = decoding.read_key(bin)
+      case key.filed_number {
         1 -> {
           let #(id, bin) = decoding.decode_varint(bin)
           decode_item(bin, Item(..item, id: id))
@@ -52,9 +52,8 @@ pub fn decode_item(bin: BitArray, item: Item) -> Item {
             let #(item, bin) = decoding.decode_item(bin, item_default)
             decode_item(bin, Item(..item, text: text))
         }
-        _ -> todo
+        _ -> panic
       }
-      todo
     }
   }
 }

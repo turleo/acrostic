@@ -101,9 +101,9 @@ fn generate_proto(text: String, out_path: String) {
   let assert Ok(_) = simplifile.delete(out_path)
   let assert Ok(_) =
     "
-import pbf/encoding.{i32_type, i64_type, len_type, varint_type}
-import pbf/decoding
-"
+    import pbf/encoding.{i32_type, i64_type, len_type, varint_type}
+    import pbf/decoding
+    "
     |> simplifile.write(to: out_path)
 
   write_enums(enums, out_path)
@@ -151,29 +151,15 @@ fn write_messages(messages: List(parser.Message), out_path: String) {
 
   let assert Ok(_) = simplifile.append(to: out_path, contents: "}\n\n")
   // encoding gen
-  // pub fn encode(msg: Message) -> BitArray {
-  //   case msg {
-  //     ReqUseItem(session, item) -> {
-  //       <<>>
-  //       |> encoding.encode_int_field(1, session)
-  //       |> encoding.encode_len_field(2, item, encode_item)
-  //     }
-  //     Hello(session, texts) -> {
-  //       <<>>
-  //       |> encoding.encode_int_field(1, session)
-  //       |> encoding.encode_repeated_field(2, texts, encoding.encode_string, False)
-  //     }
-  //   }
-  // }
 
   let body =
     messages
     |> list.map(fn(msg) {
       format(
         "
-  {message} -> {
-{fields}
-  }
+          {message} -> {
+        {fields}
+          }
         ",
         [
           #("message", message_to_string(msg, False)),
@@ -241,10 +227,10 @@ fn write_structs(structs: List(parser.Message), out_path: String) {
     let assert Ok(_) =
       format(
         "
-pub fn encode_{name}({name}: {type}) -> BitArray {
-  {body}
-}
-",
+          pub fn encode_{name}({name}: {type}) -> BitArray {
+            {body}
+          }
+       ",
         [
           #("name", pascal_to_snake(struct.name)),
           #("type", struct.name),
@@ -386,10 +372,10 @@ fn write_enums(enums: List(parser.PbEnum), out_path: String) {
     let assert Ok(_) =
       format(
         "
-pub fn encode_{name}({name}: {type}) -> BitArray {
-  {body}
-}
-",
+          pub fn encode_{name}({name}: {type}) -> BitArray {
+            {body}
+          }
+        ",
         [
           #("name", pascal_to_snake(enum.name)),
           #("type", enum.name),
@@ -416,11 +402,11 @@ pub fn encode_{name}({name}: {type}) -> BitArray {
     let assert Ok(_) =
       format(
         "
-pub fn read_{name}(binary: BitArray) -> #({type}, BitArray) {
-  let #(num, binary) = decoding.read_varint(binary)
-  {body}
-}
-    ",
+          pub fn read_{name}(binary: BitArray) -> #({type}, BitArray) {
+            let #(num, binary) = decoding.read_varint(binary)
+            {body}
+          }
+        ",
         [
           #("name", pascal_to_snake(enum.name)),
           #("type", enum.name),
