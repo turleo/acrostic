@@ -75,10 +75,46 @@ pub fn read_bool(binary: BitArray) -> #(Bool, BitArray) {
   }
 }
 
-pub fn read_varint(bin: BitArray) -> #(Int, BitArray) {
+pub fn read_varint(binary: BitArray) -> #(Int, BitArray) {
   // [high -> low]
-  let #(bin, bytes) = read_varint_bytes(bin, [])
-  #(calc_varint(bytes, 0), bin)
+  let #(binary, bytes) = read_varint_bytes(binary, [])
+  #(calc_varint(bytes, 0), binary)
+}
+
+// packed? Gleam: (Int Bool Float Enum) (wire_type: varint i32 i64)
+// 
+pub fn read_len_field(
+  binary: BitArray,
+  decoder: fn(BitArray) -> Result(a, String),
+) -> #(a, BitArray) {
+  let #(length, binary) = read_varint(binary)
+  let assert Ok(#(bytes, rest)) = read_bytes(binary, length)
+  let assert Ok(r) = decoder(bytes)
+  #(r, rest)
+}
+
+pub fn read_len_packed_field(
+  binary: BitArray,
+  reader: fn(BitArray) -> #(a, BitArray),
+) -> #(List(a), BitArray) {
+  let #(length, binary) = read_varint(binary)
+  let assert Ok(#(bytes, rest)) = read_bytes(binary, length)
+  let assert Ok(r) = decode_to_list(bytes, reader, [])
+  #(r, rest)
+}
+
+fn decode_to_list(
+  binary: BitArray,
+  reader: fn(BitArray) -> #(a, BitArray),
+  results: List(a),
+) -> Result(List(a), String) {
+  case binary {
+    <<>> -> Ok(results)
+    _ -> {
+      let #(r, rest) = reader(binary)
+      decode_to_list(rest, reader, [r, ..results])
+    }
+  }
 }
 
 // util ------------------------------------------------------------------------
