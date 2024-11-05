@@ -198,8 +198,8 @@ pub fn decode_message(msg: Message, binary: BitArray) -> Message {
         }
 
         2 -> {
-          let #(texts, binary) = decoding.read_string(binary)
-          decode_message(Hello(session, texts), binary)
+          let #(text, binary) = decoding.read_string(binary)
+          decode_message(Hello(session, list.append(texts, [text])), binary)
         }
 
         _ -> panic
