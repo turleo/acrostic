@@ -183,8 +183,7 @@ pub fn decode_message(msg: Message, binary: BitArray) -> Message {
         }
 
         6 -> {
-          let #(value, binary) =
-            decoding.read_len_field(binary, decode_to_item(_, item_defalut))
+          let #(value, binary) = read_item(binary)
           decode_message(
             ResUseItem(session, nums, list.append(items, [value])),
             binary,

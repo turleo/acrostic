@@ -376,6 +376,20 @@ fn write_structs(structs: List(parser.Message), out_path: String) {
         ],
       )
       |> simplifile.append(to: out_path)
+    // read_xxxx gen
+    // pub fn read_item(binary: BitArray) -> #(Item, BitArray) {
+    //   decoding.read_len_field(binary, decode_to_item(_, item_defalut))
+    // }
+    let assert Ok(_) =
+      format(
+        "
+        pub fn read_{name}(binary: BitArray) -> #({typename}, BitArray) {
+          decoding.read_len_field(binary, decode_to_{name}(_, {name}_defalut))
+        }
+      ",
+        [#("name", pascal_to_snake(struct.name)), #("typename", struct.name)],
+      )
+      |> simplifile.append(to: out_path)
   })
 }
 
