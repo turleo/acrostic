@@ -107,6 +107,10 @@ pub fn decode_to_item(binary: BitArray, item: Item) -> Result(Item, String) {
   }
 }
 
+pub fn read_item(binary: BitArray) -> #(Item, BitArray) {
+  decoding.read_len_field(binary, decode_to_item(_, item_defalut))
+}
+
 // messages start -----------------------------------
 pub type Message {
   ReqUseItem(session: Int, item: Item)
@@ -155,8 +159,7 @@ pub fn decode_message(msg: Message, binary: BitArray) -> Message {
         }
 
         2 -> {
-          let #(item, binary) =
-            decoding.read_len_field(binary, decode_to_item(_, item_defalut))
+          let #(item, binary) = read_item(binary)
           decode_message(ReqUseItem(session, item), binary)
         }
 
@@ -172,16 +175,18 @@ pub fn decode_message(msg: Message, binary: BitArray) -> Message {
         }
 
         2 -> {
-          let #(nums, binary) =
-            decoding.read_len_packed_field(binary, decoding.read_varint)
-          decode_message(ResUseItem(session, nums, items), binary)
+          let #(value, binary) = decoding.read_varint(binary)
+          decode_message(
+            ResUseItem(session, list.append(nums, [value]), items),
+            binary,
+          )
         }
 
         6 -> {
-          let #(item, binary) =
+          let #(value, binary) =
             decoding.read_len_field(binary, decode_to_item(_, item_defalut))
           decode_message(
-            ResUseItem(session, nums, list.append(items, [item])),
+            ResUseItem(session, nums, list.append(items, [value])),
             binary,
           )
         }
@@ -198,8 +203,8 @@ pub fn decode_message(msg: Message, binary: BitArray) -> Message {
         }
 
         2 -> {
-          let #(text, binary) = decoding.read_string(binary)
-          decode_message(Hello(session, list.append(texts, [text])), binary)
+          let #(value, binary) = decoding.read_string(binary)
+          decode_message(Hello(session, list.append(texts, [value])), binary)
         }
 
         _ -> panic
