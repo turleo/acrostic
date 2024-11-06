@@ -219,7 +219,7 @@ fn write_structs(structs: List(parser.Message), out_path: String) {
         #(
           "value",
           struct.fields
-            |> list.map(fn(f) { get_default_value(f.ty) })
+            |> list.map(fn(f) { get_default_value(f.ty, f.repeated) })
             |> list.fold(struct.name <> "(", fn(a, b) { a <> b <> "," })
             |> string.append(")"),
         ),
@@ -380,8 +380,9 @@ fn field_is_packed(field: parser.Field) -> Bool {
 //   }
 // }
 
-fn get_default_value(ty: String) -> String {
+fn get_default_value(ty: String, repeated: Bool) -> String {
   case to_gleam_ty(ty, False) {
+    _any if repeated -> "[]"
     "Int" -> "0"
     "Bool" -> "False"
     "Float" -> "0.0"
