@@ -211,9 +211,9 @@ fn write_structs(structs: List(parser.Message), out_path: String) {
       )
 
     // default
-    // pub const item_defalut = Item(0, 0)
+    // pub const item_default = Item(0, 0)
     let assert Ok(_) =
-      "pub const {name}_defalut = {value}\n"
+      "pub const {name}_default = {value}\n"
       |> format([
         #("name", pascal_to_snake(struct.name)),
         #(
@@ -300,13 +300,13 @@ fn write_structs(structs: List(parser.Message), out_path: String) {
       |> simplifile.append(to: out_path)
     // read_xxxx gen
     // pub fn read_item(binary: BitArray) -> #(Item, BitArray) {
-    //   decoding.read_len_field(binary, decode_to_item(_, item_defalut))
+    //   decoding.read_len_field(binary, decode_to_item(_, item_default))
     // }
     let assert Ok(_) =
       format(
         "
         pub fn read_{name}(binary: BitArray) -> #({typename}, BitArray) {
-          decoding.read_len_field(binary, decode_to_{name}(_, {name}_defalut))
+          decoding.read_len_field(binary, decode_to_{name}(_, {name}_default))
         }
       ",
         [#("name", pascal_to_snake(struct.name)), #("typename", struct.name)],
