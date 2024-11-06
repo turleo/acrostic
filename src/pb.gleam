@@ -15,5 +15,5 @@ pub fn gen(protos: List(String), to out_path: String) {
   |> list.fold("", string.append)
   |> generate_proto(out_path)
 
-  io.print("done")
+  io.println("done")
 }
