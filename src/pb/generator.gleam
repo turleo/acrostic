@@ -117,12 +117,15 @@ fn write_messages(messages: List(parser.Message), out_path: String) {
   |> list.fold(
     "
     pub fn decode_message(msg: Message, binary: BitArray) -> Message {
-    case msg {
+    case binary {
+      <<>> -> msg
+     _ -> case msg {
   ",
     string.append,
   )
   |> string.append(
     "
+        }
       }
     }
   ",
