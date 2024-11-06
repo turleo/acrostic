@@ -112,25 +112,46 @@ fn write_messages(messages: List(parser.Message), out_path: String) {
     |> simplifile.append(to: out_path)
 
   // decoding
-  messages
-  |> list.map(fn(msg) { get_message_case_code(msg) })
-  |> list.fold(
-    "
-    pub fn decode_message(msg: Message, binary: BitArray) -> Message {
-    case binary {
-      <<>> -> msg
-     _ -> case msg {
-  ",
-    string.append,
-  )
-  |> string.append(
-    "
+  let assert Ok(_) =
+    messages
+    |> list.map(fn(msg) { get_message_case_code(msg) })
+    |> list.fold(
+      "
+        pub fn decode_message(msg: Message, binary: BitArray) -> Message {
+        case binary {
+          <<>> -> msg
+        _ -> case msg {
+      ",
+      string.append,
+    )
+    |> string.append(
+      "
+            }
+          }
         }
-      }
-    }
-  ",
-  )
-  |> simplifile.append(to: out_path)
+      ",
+    )
+    |> simplifile.append(to: out_path)
+
+  // default gen
+  // pub const hello_default = Hello(1,2,3)
+
+  messages
+  |> list.each(fn(msg) {
+    let assert Ok(_) =
+      "pub const {name}_default = {value}\n"
+      |> format([
+        #("name", pascal_to_snake(msg.name)),
+        #(
+          "value",
+          msg.fields
+            |> list.map(fn(f) { get_default_value(f.ty, f.repeated) })
+            |> list.fold(msg.name <> "(", fn(a, b) { a <> b <> "," })
+            |> string.append(")"),
+        ),
+      ])
+      |> simplifile.append(to: out_path)
+  })
 }
 
 //     Hello(session, texts) -> {
