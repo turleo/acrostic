@@ -23,7 +23,7 @@ pub fn generate_proto(text: String, out_path: String) {
   let assert Ok(_) =
     "
     import gleam/list
-    import pb/encoding.{i32_type, i64_type}
+    import pb/encoding
     import pb/decoding
     "
     |> simplifile.write(to: out_path)
@@ -155,8 +155,7 @@ fn get_message_case_code(msg: parser.Message) -> String {
         #("field_number", int.to_string(f.tag)),
         #("field_name", {
           case f.repeated, field_is_packed(f) {
-            _, True -> f.name
-            True, _ -> "value"
+            True, False -> "value"
             _, _ -> f.name
           }
         }),
@@ -280,8 +279,8 @@ fn write_structs(structs: List(parser.Message), out_path: String) {
                 format(
                   "
                   {field_number} -> {
-                    let #({field_name}, binary) = {reader}
-                    decode_to_{name}(binary, {typename}(..{name}, {field_name}: {field_name}))
+                    let #({var_name}, binary) = {reader}
+                    decode_to_{name}(binary, {typename}(..{name}, {field_name}: {field_value}))
                   }
                 ",
                   [
@@ -290,6 +289,22 @@ fn write_structs(structs: List(parser.Message), out_path: String) {
                     #("reader", get_reader_string(f)),
                     #("field_number", int.to_string(f.tag)),
                     #("field_name", f.name),
+                    #("var_name", {
+                      case f.repeated, field_is_packed(f) {
+                        True, False -> "value"
+                        _, _ -> f.name
+                      }
+                    }),
+                    #("field_value", {
+                      case f.repeated, field_is_packed(f) {
+                        True, False ->
+                          format("list.append({name}.{field_name}, [value])", [
+                            #("name", pascal_to_snake(struct.name)),
+                            #("field_name", f.name),
+                          ])
+                        _, _ -> f.name
+                      }
+                    }),
                   ],
                 )
               })
@@ -418,7 +433,10 @@ fn get_field_encoding(field: parser.Field, field_prefix: String) -> String {
             [
               #("tag", int.to_string(field.tag)),
               #("value", field_prefix <> field.name),
-              #("wire_type", float_wire_type(field.ty) <> "_type"),
+              #(
+                "wire_type",
+                "encoding." <> float_wire_type(field.ty) <> "_type",
+              ),
             ],
           )
         "Bool" ->
