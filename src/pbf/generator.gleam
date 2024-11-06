@@ -233,20 +233,21 @@ fn get_message_case_code(msg: parser.Message) -> String {
         #("reader", get_reader_string(f)),
         #("field_number", int.to_string(f.tag)),
         #("field_name", {
-          case f.repeated {
-            True -> "value"
-            False -> f.name
+          case f.repeated, field_is_packed(f) {
+            _, True -> f.name
+            True, _ -> "value"
+            _, _ -> f.name
           }
         }),
         #(
           "message",
           message_to_string(msg, fn(f2) {
-            case f.name == f2.name, f2.repeated {
-              True, True ->
+            case f.name == f2.name, f2.repeated, field_is_packed(f2) {
+              True, True, False ->
                 format("list.append({field_name}, [value])", [
                   #("field_name", f2.name),
                 ])
-              _, _ -> f2.name
+              _, _, _ -> f2.name
             }
           }),
         ),
@@ -409,14 +410,44 @@ fn write_structs(structs: List(parser.Message), out_path: String) {
 //   }
 // decoding.decode_varint(binary)
 fn get_reader_string(field: parser.Field) -> String {
+  case field.repeated {
+    True -> {
+      case field.ty {
+        "string" -> "decoding.read_string(binary)"
+        "int32" | "int64" | "uint32" | "uint64" ->
+          "decoding.read_len_packed_field(binary, decoding.read_varint)"
+        "bool" -> "decoding.read_len_packed_field(binary, decoding.read_bool)"
+        "fixed64" | "sfixed64" | "double" ->
+          "decoding.read_len_packed_field(binary, decoding.read_i64)"
+        "fixed32" | "sfixed32" | "float" ->
+          "decoding.read_len_packed_field(binary, decoding.read_i32)"
+        // Custom Type (Enum)
+        ty -> "read_" <> pascal_to_snake(ty) <> "(binary)"
+      }
+    }
+    False -> {
+      case field.ty {
+        "string" -> "decoding.read_string(binary)"
+        "int32" | "int64" | "uint32" | "uint64" ->
+          "decoding.read_varint(binary)"
+        "bool" -> "decoding.read_bool(binary)"
+        "fixed64" | "sfixed64" | "double" -> "decoding.read_i64(binary)"
+        "fixed32" | "sfixed32" | "float" -> "decoding.read_i32(binary)"
+        // Custom Type (Enum)
+        ty -> "read_" <> pascal_to_snake(ty) <> "(binary)"
+      }
+    }
+  }
+}
+
+fn field_is_packed(field: parser.Field) -> Bool {
   case field.ty {
-    "string" -> "decoding.read_string(binary)"
-    "int32" | "int64" | "uint32" | "uint64" -> "decoding.read_varint(binary)"
-    "bool" -> "decoding.read_bool(binary)"
-    "fixed64" | "sfixed64" | "double" -> "decoding.read_i64(binary)"
-    "fixed32" | "sfixed32" | "float" -> "decoding.read_i32(binary)"
+    "int32" | "int64" | "uint32" | "uint64" if field.repeated -> True
+    "bool" if field.repeated -> True
+    "fixed64" | "sfixed64" | "double" if field.repeated -> True
+    "fixed32" | "sfixed32" | "float" if field.repeated -> True
     // Custom Type (Enum)
-    ty -> "read_" <> pascal_to_snake(ty) <> "(binary)"
+    _ -> False
   }
 }
 

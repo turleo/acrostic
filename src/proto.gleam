@@ -175,11 +175,9 @@ pub fn decode_message(msg: Message, binary: BitArray) -> Message {
         }
 
         2 -> {
-          let #(value, binary) = decoding.read_varint(binary)
-          decode_message(
-            ResUseItem(session, list.append(nums, [value]), items),
-            binary,
-          )
+          let #(nums, binary) =
+            decoding.read_len_packed_field(binary, decoding.read_varint)
+          decode_message(ResUseItem(session, nums, items), binary)
         }
 
         6 -> {
