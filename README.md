@@ -1,4 +1,4 @@
-# pbf
+# pb
 
 [![Package Version](https://img.shields.io/hexpm/v/gproto)](https://hex.pm/packages/gproto)
 [![Hex Docs](https://img.shields.io/badge/hex-docs-ffaff3)](https://hexdocs.pm/gproto/)

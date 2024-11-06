@@ -2,7 +2,7 @@ import gleam/bit_array
 import gleam/bool
 import gleam/int
 import gleam/list
-import pbf/helper.{lsr}
+import pb/helper.{lsr}
 
 // int32, int64, uint32, uint64, bool, enum
 pub const varint_type = 0

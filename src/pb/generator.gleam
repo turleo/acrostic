@@ -10,8 +10,8 @@ import gleam/result
 import gleam/string
 import nibble
 import nibble/lexer
-import pbf/helper
-import pbf/parser
+import pb/helper
+import pb/parser
 import pprint
 import simplifile
 import sprinkle.{format}
@@ -91,19 +91,19 @@ fn generate_proto(text: String, out_path: String) {
       !{ list.find(structs, fn(a) { a.name == msg.name }) |> result.is_ok }
     })
 
-  io.println("===========" <> out_path)
-  pprint.debug(enums)
-  io.println("===========")
-  pprint.debug(structs)
-  io.println("===========")
-  pprint.debug(messages)
+  // io.println("===========" <> out_path)
+  // pprint.debug(enums)
+  // io.println("===========")
+  // pprint.debug(structs)
+  // io.println("===========")
+  // pprint.debug(messages)
 
   let assert Ok(_) = simplifile.delete(out_path)
   let assert Ok(_) =
     "
     import gleam/list
-    import pbf/encoding.{i32_type, i64_type, len_type, varint_type}
-    import pbf/decoding
+    import pb/encoding.{i32_type, i64_type, len_type, varint_type}
+    import pb/decoding
     "
     |> simplifile.write(to: out_path)
 

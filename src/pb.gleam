@@ -1,9 +1,6 @@
-import gleam/io
-import pbf/generator.{generate, load, shutdown}
+import pb/generator.{generate, load, shutdown}
 
 pub fn main() {
-  io.println("Hello from pbf!")
-
   generator.start()
   |> load("protos/common.proto")
   |> load("protos/hello.proto")
