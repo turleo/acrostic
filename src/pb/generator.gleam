@@ -20,7 +20,6 @@ pub fn generate_proto(text: String, out_path: String) {
       !{ list.find(structs, fn(a) { a.name == msg.name }) |> result.is_ok }
     })
 
-  let assert Ok(_) = simplifile.delete(out_path)
   let assert Ok(_) =
     "
     import gleam/list
@@ -574,7 +573,7 @@ fn get_enums(text: String, lexer, parser) {
 fn get_structs(text: String, lexer, parser) {
   let assert Ok(re) =
     regex.from_string(
-      "//\\s*@gleam\\s+struct\\s*\nmessage\\s+\\w+\\s*{((?:.|\n)*?)}",
+      "//\\s*@gleam\\s+record\\s*\nmessage\\s+\\w+\\s*{((?:.|\n)*?)}",
     )
   regex.scan(re, text)
   |> list.map(fn(a) {
