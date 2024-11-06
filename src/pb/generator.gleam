@@ -1,10 +1,5 @@
-import gleam/dict.{type Dict}
-import gleam/erlang
-import gleam/erlang/process.{type Subject}
 import gleam/int
-import gleam/io
 import gleam/list
-import gleam/otp/actor
 import gleam/regex
 import gleam/result
 import gleam/string
@@ -12,76 +7,10 @@ import nibble
 import nibble/lexer
 import pb/helper
 import pb/parser
-import pprint
 import simplifile
 import sprinkle.{format}
 
-type State {
-  State(files: List(String))
-}
-
-pub type Message {
-  Load(filename: String)
-  Generate(client: Subject(Result(Nil, String)), out_path: String)
-  Shutdown
-}
-
-pub type Self =
-  Subject(Message)
-
-pub fn load(self: Self, filename: String) {
-  process.send(self, Load(filename))
-  self
-}
-
-pub fn generate(self: Self, out_path: String) {
-  case process.try_call(self, Generate(_, out_path), within: 10_000) {
-    Ok(_) -> {
-      io.println("done")
-      self
-    }
-    Error(e) -> {
-      io.println_error(string.inspect(e))
-      self
-    }
-  }
-}
-
-pub fn shutdown(self: Self) {
-  process.send(self, Shutdown)
-}
-
-pub fn start() -> Self {
-  actor.start(State([]), fn(message: Message, self: State) -> actor.Next(
-    Message,
-    State,
-  ) {
-    case message {
-      Load(filename) -> {
-        io.println("loading filename: " <> filename)
-        actor.continue(State(files: [filename, ..self.files]))
-      }
-      Generate(client, out_path) -> {
-        self.files
-        |> list.map(fn(filepath) {
-          let assert Ok(content) = simplifile.read(from: filepath)
-          content
-        })
-        |> list.fold("", string.append)
-        |> generate_proto(out_path)
-
-        process.send(client, Ok(Nil))
-        actor.continue(self)
-      }
-      Shutdown -> {
-        actor.Stop(process.Normal)
-      }
-    }
-  })
-  |> result.lazy_unwrap(fn() { panic })
-}
-
-fn generate_proto(text: String, out_path: String) {
+pub fn generate_proto(text: String, out_path: String) {
   let #(lexer, message_parser, enum_parser) = parser.parser()
   let enums = get_enums(text, lexer, enum_parser)
   let structs = get_structs(text, lexer, message_parser)
@@ -91,18 +20,11 @@ fn generate_proto(text: String, out_path: String) {
       !{ list.find(structs, fn(a) { a.name == msg.name }) |> result.is_ok }
     })
 
-  // io.println("===========" <> out_path)
-  // pprint.debug(enums)
-  // io.println("===========")
-  // pprint.debug(structs)
-  // io.println("===========")
-  // pprint.debug(messages)
-
   let assert Ok(_) = simplifile.delete(out_path)
   let assert Ok(_) =
     "
     import gleam/list
-    import pb/encoding.{i32_type, i64_type, len_type, varint_type}
+    import pb/encoding.{i32_type, i64_type}
     import pb/decoding
     "
     |> simplifile.write(to: out_path)

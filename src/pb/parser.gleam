@@ -1,7 +1,5 @@
-import gleam/io
-import gleam/option.{type Option, None, Some}
+import gleam/option.{None, Some}
 import gleam/set
-import gleam/string
 import nibble.{do, return}
 import nibble/lexer
 
