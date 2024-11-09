@@ -121,7 +121,7 @@ fn write_messages(messages: List(parser.Message), out_path: String) {
 
   let assert Ok(_) =
     "
-    pub fn encode(msg: Message) -> BitArray {
+    pub fn encode_message(msg: Message) -> BitArray {
     case msg {
         {body}
     }
