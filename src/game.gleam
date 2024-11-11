@@ -46,10 +46,10 @@ pub type Message {
   Ping(hello: String, world: String)
 }
 
-pub fn encode_message(msg: Message) -> BitArray {
+pub fn encode(msg: Message) -> BitArray {
   case msg {
     Ping(hello, world) -> {
-      <<>>
+      <<1:big-size(16)>>
       |> encoding.encode_len_field(1, hello, encoding.encode_string)
       |> encoding.encode_len_field(2, world, encoding.encode_string)
     }
@@ -82,3 +82,11 @@ pub fn decode_message(msg: Message, binary: BitArray) -> Message {
 }
 
 pub const ping_default = Ping("", "")
+
+pub fn decode(binary: BitArray) -> Message {
+  let assert <<id:big-size(16), binary:bits>> = binary
+  case id {
+    1 -> decode_message(ping_default, binary)
+    _ -> panic
+  }
+}

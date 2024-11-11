@@ -121,7 +121,10 @@ fn write_messages(messages: List(Message), out_path: String) {
             "fields",
             msg.fields
               |> list.map(get_field_encoding(_, ""))
-              |> list.fold("<<>>\n", string.append),
+              |> list.fold(
+                "<<" <> int.to_string(msg.id) <> ":big-size(16)>>\n",
+                string.append,
+              ),
           ),
         ],
       )
@@ -130,7 +133,7 @@ fn write_messages(messages: List(Message), out_path: String) {
 
   let assert Ok(_) =
     "
-    pub fn encode_message(msg: Message) -> BitArray {
+    pub fn encode(msg: Message) -> BitArray {
     case msg {
         {body}
     }
@@ -161,9 +164,7 @@ fn write_messages(messages: List(Message), out_path: String) {
     )
     |> simplifile.append(to: out_path)
 
-  // default gen
   // pub const hello_default = Hello(1,2,3)
-
   messages
   |> list.each(fn(msg) {
     let assert Ok(_) =
@@ -180,6 +181,35 @@ fn write_messages(messages: List(Message), out_path: String) {
       ])
       |> simplifile.append(to: out_path)
   })
+
+  write_decode(messages, out_path)
+}
+
+fn write_decode(messages: List(Message), out_path: String) {
+  let assert Ok(_) =
+    messages
+    |> list.map(fn(msg) {
+      format("{id} -> decode_message({default},binary)\n", [
+        #("id", int.to_string(msg.id)),
+        #("default", pascal_to_snake(msg.name) <> "_default"),
+      ])
+    })
+    |> list.fold(
+      "
+      pub fn decode(binary: BitArray) -> Message {
+        let assert <<id:big-size(16), binary:bits>> = binary
+        case id { 
+    ",
+      string.append,
+    )
+    |> string.append(
+      "
+          _ -> panic
+        }
+      }
+    ",
+    )
+    |> simplifile.append(to: out_path)
 }
 
 //     Hello(session, texts) -> {
