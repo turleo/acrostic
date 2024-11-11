@@ -13,5 +13,5 @@ pub fn hello_world_test() {
 }
 
 pub fn pb_test() {
-  pb.gen(["test.proto"], to: "src/game.gleam", flags: pb.Flags(False, False))
+  pb.gen(["game.proto"], to: "src/game.gleam", flags: pb.Flags(False, False))
 }
