@@ -40,3 +40,45 @@ pub fn decode_to_item(binary: BitArray, item: Item) -> Result(Item, String) {
 pub fn read_item(binary: BitArray) -> #(Item, BitArray) {
   decoding.read_len_field(binary, decode_to_item(_, item_default))
 }
+
+// messages start -----------------------------------
+pub type Message {
+  Ping(hello: String, world: String)
+}
+
+pub fn encode_message(msg: Message) -> BitArray {
+  case msg {
+    Ping(hello, world) -> {
+      <<>>
+      |> encoding.encode_len_field(1, hello, encoding.encode_string)
+      |> encoding.encode_len_field(2, world, encoding.encode_string)
+    }
+  }
+}
+
+pub fn decode_message(msg: Message, binary: BitArray) -> Message {
+  case binary {
+    <<>> -> msg
+    _ ->
+      case msg {
+        Ping(hello, world) -> {
+          let #(key, binary) = decoding.read_key(binary)
+          case key.field_number {
+            1 -> {
+              let #(hello, binary) = decoding.read_string(binary)
+              decode_message(Ping(hello, world), binary)
+            }
+
+            2 -> {
+              let #(world, binary) = decoding.read_string(binary)
+              decode_message(Ping(hello, world), binary)
+            }
+
+            _ -> panic
+          }
+        }
+      }
+  }
+}
+
+pub const ping_default = Ping("", "")

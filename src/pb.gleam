@@ -1,6 +1,7 @@
 import gleam/int
 import gleam/io
 import gleam/list
+import gleam/option
 import gleam/regex
 import gleam/result
 import gleam/string
@@ -11,9 +12,9 @@ import pb/parser
 import simplifile
 import sprinkle.{format}
 
-// pub type PbMessage {
-//   PbMessage(name: String, fields: List(Field))
-// }
+pub type Message {
+  Message(id: Int, name: String, fields: List(parser.PbMessageField))
+}
 
 pub type Flags {
   Flags(enum_to_int: Bool, int_to_enum: Bool)
@@ -36,11 +37,15 @@ pub fn gen(protos: List(String), to out_path: String, flags flags: Flags) {
 fn generate_proto(text: String, out_path: String, flags: Flags) {
   let #(lexer, message_parser, enum_parser) = parser.parser()
   let enums = get_enums(text, lexer, enum_parser)
-  let structs = get_structs(text, lexer, message_parser)
+  let structs =
+    get_structs(text, lexer, message_parser)
+    |> list.map(fn(a) {
+      Message(id: a.0, name: { a.1 }.name, fields: { a.1 }.fields)
+    })
   let messages =
     get_messages(text, lexer, message_parser)
-    |> list.filter(fn(msg) {
-      !{ list.find(structs, fn(a) { a.name == msg.name }) |> result.is_ok }
+    |> list.map(fn(a) {
+      Message(id: a.0, name: { a.1 }.name, fields: { a.1 }.fields)
     })
 
   let assert Ok(_) =
@@ -87,7 +92,7 @@ fn generate_proto(text: String, out_path: String, flags: Flags) {
 // }
 
 // f.name <> ": " <> to_gleam_ty(f.ty, f.repeated)
-fn write_messages(messages: List(parser.PbMessage), out_path: String) {
+fn write_messages(messages: List(Message), out_path: String) {
   let assert Ok(_) =
     simplifile.append(to: out_path, contents: "pub type Message {\n")
   let assert Ok(_) =
@@ -187,7 +192,7 @@ fn write_messages(messages: List(parser.PbMessage), out_path: String) {
 //         _ -> todo
 //       }
 //     }
-fn get_message_case_code(msg: parser.PbMessage) -> String {
+fn get_message_case_code(msg: Message) -> String {
   msg.fields
   |> list.map(fn(f) {
     format(
@@ -238,7 +243,7 @@ fn get_message_case_code(msg: parser.PbMessage) -> String {
 // pub type Item {
 //   Item(id: Int, num: Int)
 // }
-fn write_structs(structs: List(parser.PbMessage), out_path: String) {
+fn write_structs(structs: List(Message), out_path: String) {
   structs
   |> list.each(fn(struct) {
     // define gen
@@ -677,32 +682,39 @@ fn get_enums(text: String, lexer, parser) {
 fn get_structs(text: String, lexer, parser) {
   let assert Ok(re) =
     regex.from_string(
-      "//\\s*@gleam\\s+record\\s*\nmessage\\s+\\w+\\s*{((?:.|\n)*?)}",
+      "//\\s*@gleam\\s+record\\s*\nmessage\\s+\\w+\\s*{([^{}]*)}",
     )
   regex.scan(re, text)
   |> list.map(fn(a) {
     let assert Ok(tokens) = lexer.run(a.content, lexer)
     let assert Ok(message) = nibble.run(tokens, parser)
-    message
+    #(0, message)
   })
 }
 
 fn get_messages(text: String, lexer, parser) {
   let assert Ok(re) =
     regex.from_string(
-      "//\\s*@gleam\\s+msgid\\s*=\\s*(%d)\\s*\nmessage\\s+\\w+\\s*{[^{}]*}",
+      "//\\s*@gleam\\s+msgid\\s*=\\s*(\\d+)\\s*\nmessage\\s+\\w+\\s*{([^{}]*)}",
     )
   regex.scan(re, text)
   |> list.map(fn(a) {
     let assert Ok(tokens) = lexer.run(a.content, lexer)
-    let assert Ok(message) = nibble.run(tokens, parser)
-    message
+    let assert Ok(msg) = nibble.run(tokens, parser)
+    let msgid =
+      a.submatches
+      |> list.first
+      |> result.lazy_unwrap(fn() { panic })
+      |> option.lazy_unwrap(fn() { panic })
+      |> int.parse
+      |> result.lazy_unwrap(fn() { panic })
+    #(msgid, msg)
   })
 }
 
 // "  Item(id: Int, num: Int)\n"
 fn message_to_string(
-  message: parser.PbMessage,
+  message: Message,
   convert: fn(parser.PbMessageField) -> String,
 ) -> String {
   case list.length(message.fields) > 0 {
