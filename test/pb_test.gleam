@@ -1,5 +1,6 @@
 import gleeunit
 import gleeunit/should
+import pb
 
 pub fn main() {
   gleeunit.main()
@@ -9,4 +10,8 @@ pub fn main() {
 pub fn hello_world_test() {
   1
   |> should.equal(1)
+}
+
+pub fn pb_test() {
+  pb.gen(["test.proto"], to: "src/game.gleam", flags: pb.Flags(False, False))
 }

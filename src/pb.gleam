@@ -11,6 +11,10 @@ import pb/parser
 import simplifile
 import sprinkle.{format}
 
+// pub type PbMessage {
+//   PbMessage(name: String, fields: List(Field))
+// }
+
 pub type Flags {
   Flags(enum_to_int: Bool, int_to_enum: Bool)
 }
@@ -83,7 +87,7 @@ fn generate_proto(text: String, out_path: String, flags: Flags) {
 // }
 
 // f.name <> ": " <> to_gleam_ty(f.ty, f.repeated)
-fn write_messages(messages: List(parser.Message), out_path: String) {
+fn write_messages(messages: List(parser.PbMessage), out_path: String) {
   let assert Ok(_) =
     simplifile.append(to: out_path, contents: "pub type Message {\n")
   let assert Ok(_) =
@@ -183,7 +187,7 @@ fn write_messages(messages: List(parser.Message), out_path: String) {
 //         _ -> todo
 //       }
 //     }
-fn get_message_case_code(msg: parser.Message) -> String {
+fn get_message_case_code(msg: parser.PbMessage) -> String {
   msg.fields
   |> list.map(fn(f) {
     format(
@@ -234,7 +238,7 @@ fn get_message_case_code(msg: parser.Message) -> String {
 // pub type Item {
 //   Item(id: Int, num: Int)
 // }
-fn write_structs(structs: List(parser.Message), out_path: String) {
+fn write_structs(structs: List(parser.PbMessage), out_path: String) {
   structs
   |> list.each(fn(struct) {
     // define gen
@@ -388,7 +392,7 @@ fn write_structs(structs: List(parser.Message), out_path: String) {
 //     x -> x
 //   }
 // decoding.decode_varint(binary)
-fn get_reader_string(field: parser.Field) -> String {
+fn get_reader_string(field: parser.PbMessageField) -> String {
   case field.repeated {
     True -> {
       case field.ty {
@@ -419,7 +423,7 @@ fn get_reader_string(field: parser.Field) -> String {
   }
 }
 
-fn field_is_packed(field: parser.Field) -> Bool {
+fn field_is_packed(field: parser.PbMessageField) -> Bool {
   case field.ty {
     "int32" | "int64" | "uint32" | "uint64" if field.repeated -> True
     "bool" if field.repeated -> True
@@ -451,7 +455,10 @@ fn get_default_value(ty: String, repeated: Bool) -> String {
 }
 
 //   |> encoding.encode_int_field(1, item.id, varint_type)
-fn get_field_encoding(field: parser.Field, field_prefix: String) -> String {
+fn get_field_encoding(
+  field: parser.PbMessageField,
+  field_prefix: String,
+) -> String {
   case field.repeated {
     True ->
       format(
@@ -681,7 +688,10 @@ fn get_structs(text: String, lexer, parser) {
 }
 
 fn get_messages(text: String, lexer, parser) {
-  let assert Ok(re) = regex.from_string("message\\s+\\w+\\s*{[^{}]*}")
+  let assert Ok(re) =
+    regex.from_string(
+      "//\\s*@gleam\\s+msgid\\s*=\\s*(%d)\\s*\nmessage\\s+\\w+\\s*{[^{}]*}",
+    )
   regex.scan(re, text)
   |> list.map(fn(a) {
     let assert Ok(tokens) = lexer.run(a.content, lexer)
@@ -692,8 +702,8 @@ fn get_messages(text: String, lexer, parser) {
 
 // "  Item(id: Int, num: Int)\n"
 fn message_to_string(
-  message: parser.Message,
-  convert: fn(parser.Field) -> String,
+  message: parser.PbMessage,
+  convert: fn(parser.PbMessageField) -> String,
 ) -> String {
   case list.length(message.fields) > 0 {
     True -> {

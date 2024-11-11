@@ -3,20 +3,20 @@ import gleam/set
 import nibble.{do, return}
 import nibble/lexer
 
-pub type Field {
+pub type PbMessageField {
   Field(repeated: Bool, ty: String, name: String, tag: Int)
 }
 
-pub type Message {
-  Message(name: String, fields: List(Field))
+pub type PbMessage {
+  Message(name: String, fields: List(PbMessageField))
 }
 
-pub type EnumField {
-  EnumField(name: String, tag: Int)
+pub type PbEnumField {
+  PbEnumField(name: String, tag: Int)
 }
 
 pub type PbEnum {
-  PbEnum(name: String, fields: List(EnumField))
+  PbEnum(name: String, fields: List(PbEnumField))
 }
 
 pub type Token {
@@ -99,7 +99,7 @@ pub fn parser() {
     use _ <- do(nibble.token(Equals))
     use tag <- do(parse_num)
     use _ <- do(nibble.token(Semicolon))
-    return(EnumField(name:, tag:))
+    return(PbEnumField(name:, tag:))
   }
 
   let message_parser = {
