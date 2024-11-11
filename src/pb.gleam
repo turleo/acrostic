@@ -690,7 +690,6 @@ fn write_enum_to_int(enum: parser.PbEnum, out_path: String) {
     |> list.fold(begin, string.append)
     |> string.append(
       "
-        _ -> panic
       }}
       ",
     )
