@@ -2,14 +2,14 @@ syntax = "proto3";
 package game;
 
 
-// @gleam record
+// @gleam record (embedded in api)
 message Item {
     uint64 id = 1;
     uint64 num = 2;
 }
 
 
-// @gleam msgid = 1
+// @gleam msgid = 1 (client-server api)
 message Test {
     string hello = 1;
     double world = 2;
