@@ -10,7 +10,9 @@ message Item {
 
 
 // @gleam msgid = 1
-message Ping {
+message Test {
     string hello = 1;
-    string world = 2;
+    double world = 2;
+    Item item = 3;
+    repeated int32 nums = 4;
 }

@@ -51,7 +51,8 @@ fn generate_proto(text: String, out_path: String, flags: Flags) {
   let assert Ok(_) =
     "
     import gleam/list
-    import pb/encoding
+    import gleam/bit_array
+    import pb/encoding.{type FieldEncoder, FieldEncoder}
     import pb/decoding
     "
     |> simplifile.write(to: out_path)
@@ -203,8 +204,7 @@ fn write_decode(messages: List(Message), out_path: String) {
       string.append,
     )
     |> string.append(
-      "
-          _ -> panic
+      "_ -> panic
         }
       }
     ",
@@ -409,7 +409,28 @@ fn write_structs(structs: List(Message), out_path: String) {
         [#("name", pascal_to_snake(struct.name)), #("typename", struct.name)],
       )
       |> simplifile.append(to: out_path)
+
+    write_struct_field_encoder(struct, out_path)
   })
+}
+
+fn write_struct_field_encoder(struct: Message, out_path: String) {
+  let assert Ok(_) =
+    format(
+      "
+      pub const {name}_field_encoder = FieldEncoder(
+        {wire_type},
+        {encoder}
+      )
+    ",
+      [
+        #("name", pascal_to_snake(struct.name)),
+        #("wire_type", "encoding.WireLenTy"),
+        #("encoder", "encode_" <> pascal_to_snake(struct.name)),
+      ],
+    )
+    |> simplifile.append(to: out_path)
+  Nil
 }
 
 // fn to_gleam_ty(ty: String, repeated: Bool) -> String {
@@ -489,83 +510,47 @@ fn get_default_value(ty: String, repeated: Bool) -> String {
   }
 }
 
-//   |> encoding.encode_int_field(1, item.id, varint_type)
+// |> bit_array.append(encoding.encode_field(1, 1, encoding.int_field_encoder))
 fn get_field_encoding(
   field: parser.PbMessageField,
   field_prefix: String,
 ) -> String {
-  case field.repeated {
-    True ->
-      format(
-        "  |> encoding.encode_repeated_field({tag}, {value}, {encoder}, {packed})\n",
-        [
-          #("tag", int.to_string(field.tag)),
-          #("value", field_prefix <> field.name),
-          #("encoder", get_encoder_and_packed(field.ty).0),
-          #("packed", get_encoder_and_packed(field.ty).1),
-        ],
-      )
-    False -> {
-      case to_gleam_ty(field.ty, False) {
-        "Int" ->
-          format("  |> encoding.encode_int_field({tag}, {value})\n", [
-            #("tag", int.to_string(field.tag)),
-            #("value", field_prefix <> field.name),
-          ])
-        "Float" ->
-          format(
-            "  |> encoding.encode_float_field({tag}, {value}, {wire_type})\n",
-            [
-              #("tag", int.to_string(field.tag)),
-              #("value", field_prefix <> field.name),
-              #(
-                "wire_type",
-                "encoding." <> float_wire_type(field.ty) <> "_type",
-              ),
-            ],
-          )
-        "Bool" ->
-          format("  |> encoding.encode_bool_field({tag}, {value})\n", [
-            #("tag", int.to_string(field.tag)),
-            #("value", field_prefix <> field.name),
-          ])
-        "String" ->
-          format("  |> encoding.encode_len_field({tag}, {value}, {encoder})\n", [
-            #("tag", int.to_string(field.tag)),
-            #("value", field_prefix <> field.name),
-            #("encoder", "encoding.encode_string"),
-          ])
-        x ->
-          // Enum or Struct
-          format("  |> encoding.encode_len_field({tag}, {value}, {encoder})\n", [
-            #("tag", int.to_string(field.tag)),
-            #("value", field_prefix <> field.name),
-            #("encoder", "encode_" <> pascal_to_snake(x)),
-          ])
-      }
-    }
-  }
+  format(
+    "|> bit_array.append(encoding.{encode_field}({tag}, {value}, {field_encoder}))",
+    [
+      #("encode_field", case field.repeated {
+        True -> "encode_repeated_field"
+        False -> "encode_field"
+      }),
+      #("tag", int.to_string(field.tag)),
+      #("value", field_prefix <> field.name),
+      #("field_encoder", {
+        case field.ty {
+          // string
+          "string" -> "encoding.string_field_encoder"
+          // varint
+          "int32" | "int64" | "uint32" | "uint64" ->
+            "encoding.int_field_encoder"
+          "bool" -> "encoding.bool_field_encoder"
+          // i64
+          "fixed64" | "sfixed64" | "double" -> "encoding.i64_field_encoder"
+          // i32
+          "fixed32" | "sfixed32" | "float" -> "encoding.i32_field_encoder"
+          // Custom Type (Struct | Enum)
+          x -> pascal_to_snake(x) <> "_field_encoder"
+        }
+      }),
+    ],
+  )
 }
 
-fn get_encoder_and_packed(ty: String) -> #(String, String) {
-  case to_gleam_ty(ty, False) {
-    "Int" -> #("encoding.encode_varint", "True")
-    "Bool" -> #("encoding.encode_bool", "True")
-    "Float" -> #("encoding.encode_" <> float_wire_type(ty), "True")
-    "String" -> #("encoding.encode_string", "False")
-    // Enum or Struct
-    // todo: Enum is Int, is packed
-    x -> #("encode_" <> pascal_to_snake(x), "False")
-  }
-}
-
-fn float_wire_type(ty: String) -> String {
-  case ty {
-    "fixed32" | "sfixed32" | "float" -> "i32"
-    "fixed64" | "sfixed64" | "double" -> "i64"
-    x -> panic as { "Invalid float type: " <> x }
-  }
-}
+// fn float_wire_type(ty: String) -> String {
+//   case ty {
+//     "fixed32" | "sfixed32" | "float" -> "i32"
+//     "fixed64" | "sfixed64" | "double" -> "i64"
+//     x -> panic as { "Invalid float type: " <> x }
+//   }
+// }
 
 // pub type Season {
 //   Spring
@@ -661,16 +646,79 @@ fn write_enums(enums: List(parser.PbEnum), out_path: String, flags: Flags) {
         ],
       )
       |> simplifile.append(to: out_path)
+
     // enum_to_int
     let _ = case flags.enum_to_int {
       True -> write_enum_to_int(enum, out_path)
       _ -> Nil
     }
+
+    // int_to_enum
+    let _ = case flags.int_to_enum {
+      True -> write_int_to_enum(enum, out_path)
+      _ -> Nil
+    }
+
+    // field encoder
+    write_enum_field_encoder(enum, out_path)
   })
 }
 
+// pub const i32_field_encoder = FieldEncoder(
+//   wire_type: WireI32Ty,
+//   encode: encode_i32,
+// )
+fn write_enum_field_encoder(enum: parser.PbEnum, out_path: String) {
+  let assert Ok(_) =
+    format(
+      "
+      pub const {name}_field_encoder = FieldEncoder(
+        {wire_type},
+        {encoder}
+      )
+    ",
+      [
+        #("name", pascal_to_snake(enum.name)),
+        #("wire_type", "encoding.WireVarIntTy"),
+        #("encoder", "encode_" <> pascal_to_snake(enum.name)),
+      ],
+    )
+    |> simplifile.append(to: out_path)
+  Nil
+}
+
+fn write_int_to_enum(enum: parser.PbEnum, out_path: String) {
+  let head =
+    format(
+      "
+          pub fn int_to_{name}(n: Int) -> {typename} {
+            case n {
+        ",
+      [#("name", pascal_to_snake(enum.name)), #("typename", enum.name)],
+    )
+
+  let assert Ok(_) =
+    enum.fields
+    |> list.map(fn(f) {
+      format("{key} -> {value}\n", [
+        #("key", int.to_string(f.tag)),
+        #("value", f.name),
+      ])
+    })
+    |> list.fold(head, string.append)
+    |> string.append(
+      "
+        _ -> panic
+      }}
+      ",
+    )
+    |> simplifile.append(to: out_path)
+
+  Nil
+}
+
 fn write_enum_to_int(enum: parser.PbEnum, out_path: String) {
-  let begin =
+  let head =
     format(
       "
           pub fn {name}_to_int({name}: {typename}) -> Int {
@@ -687,7 +735,7 @@ fn write_enum_to_int(enum: parser.PbEnum, out_path: String) {
         #("value", int.to_string(f.tag)),
       ])
     })
-    |> list.fold(begin, string.append)
+    |> list.fold(head, string.append)
     |> string.append(
       "
       }}
