@@ -1,3 +1,5 @@
+import acrostic/helper
+import acrostic/parser
 import gleam/int
 import gleam/io
 import gleam/list
@@ -7,8 +9,6 @@ import gleam/result
 import gleam/string
 import nibble
 import nibble/lexer
-import pb/helper
-import pb/parser
 import simplifile
 import sprinkle.{format}
 
@@ -52,8 +52,8 @@ fn generate_proto(text: String, out_path: String, flags: Flags) {
     "
     import gleam/list
     import gleam/bit_array
-    import pb/encoding.{type FieldEncoder, FieldEncoder}
-    import pb/decoding
+    import acrostic/encoding.{type FieldEncoder, FieldEncoder}
+    import acrostic/decoding
     "
     |> simplifile.write(to: out_path)
 

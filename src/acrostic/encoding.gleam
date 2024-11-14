@@ -1,7 +1,7 @@
+import acrostic/helper.{lsr}
 import gleam/bit_array
 import gleam/int
 import gleam/list
-import pb/helper.{lsr}
 
 const mask64bit = 0xFFFFFFFFFFFFFFFF
 

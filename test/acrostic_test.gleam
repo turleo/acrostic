@@ -1,6 +1,6 @@
+import acrostic
 import gleeunit
 import gleeunit/should
-import pb
 
 pub fn main() {
   gleeunit.main()
@@ -13,5 +13,9 @@ pub fn hello_world_test() {
 }
 
 pub fn pb_test() {
-  pb.gen(["game.proto"], to: "src/game.gleam", flags: pb.Flags(False, False))
+  acrostic.gen(
+    ["game.proto"],
+    to: "src/game.gleam",
+    flags: acrostic.Flags(False, False),
+  )
 }

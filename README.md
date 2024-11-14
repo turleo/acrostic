@@ -1,25 +1,25 @@
-# pb
+# acrostic
 
-[![Package Version](https://img.shields.io/hexpm/v/gproto)](https://hex.pm/packages/gproto)
-[![Hex Docs](https://img.shields.io/badge/hex-docs-ffaff3)](https://hexdocs.pm/gproto/)
+[![Package Version](https://img.shields.io/hexpm/v/acrostic)](https://hex.pm/packages/acrostic)
+[![Hex Docs](https://img.shields.io/badge/hex-docs-ffaff3)](https://hexdocs.pm/acrostic/)
 
 
-暂时不支持 float
-超过 32位的 数字可能有问题
+
 
 
 ```sh
-gleam add gproto@1
+gleam add acrostic
 ```
 ```gleam
-import gproto
+import acrostic
 
 pub fn main() {
   // TODO: An example of the project in use
+  acrostic.gen(["game.proto"], to: "src/game.gleam", flags: acrostic.Flags(False, False))
 }
 ```
 
-Further documentation can be found at <https://hexdocs.pm/gproto>.
+Further documentation can be found at <https://hexdocs.pm/acrostic>.
 
 ## Development
 
