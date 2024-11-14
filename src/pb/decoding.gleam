@@ -38,9 +38,9 @@ pub fn decode_to_string(binary: BitArray) -> Result(String, String) {
 pub fn read_string(binary: BitArray) -> #(String, BitArray) {
   let #(len, binary) = read_varint(binary)
   case read_bytes(binary, len) {
-    Ok(#(first, second)) -> #(
-      first |> bit_array.to_string |> result.unwrap(""),
-      second,
+    Ok(#(readed, reset)) -> #(
+      readed |> bit_array.to_string |> result.unwrap(""),
+      reset,
     )
     _ -> panic
   }
@@ -149,7 +149,7 @@ pub fn read_bytes(
   bin: BitArray,
   length: Int,
 ) -> Result(#(BitArray, BitArray), Nil) {
-  case bit_array.byte_size(bin) > length {
+  case bit_array.byte_size(bin) >= length {
     True ->
       Ok(#(
         bit_array.slice(bin, 0, length) |> result.unwrap(<<>>),
