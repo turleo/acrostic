@@ -165,11 +165,11 @@ fn write_messages(messages: List(Message), out_path: String) {
     )
     |> simplifile.append(to: out_path)
 
-  // pub const hello_default = Hello(1,2,3)
+  // pub const empty_hello = Hello(1,2,3)
   messages
   |> list.each(fn(msg) {
     let assert Ok(_) =
-      "pub const {name}_default = {value}\n"
+      "pub const empty_{name} = {value}\n"
       |> format([
         #("name", pascal_to_snake(msg.name)),
         #(
@@ -192,7 +192,7 @@ fn write_decode(messages: List(Message), out_path: String) {
     |> list.map(fn(msg) {
       format("{id} -> decode_message({default},binary)\n", [
         #("id", int.to_string(msg.id)),
-        #("default", pascal_to_snake(msg.name) <> "_default"),
+        #("default", "empty_" <> pascal_to_snake(msg.name)),
       ])
     })
     |> list.fold(
@@ -292,9 +292,9 @@ fn write_structs(structs: List(Message), out_path: String) {
       )
 
     // default
-    // pub const item_default = Item(0, 0)
+    // pub const empty_item = Item(0, 0)
     let assert Ok(_) =
-      "pub const {name}_default = {value}\n"
+      "pub const empty_{name} = {value}\n"
       |> format([
         #("name", pascal_to_snake(struct.name)),
         #(
@@ -397,13 +397,13 @@ fn write_structs(structs: List(Message), out_path: String) {
       |> simplifile.append(to: out_path)
     // read_xxxx gen
     // pub fn read_item(binary: BitArray) -> #(Item, BitArray) {
-    //   decoding.read_len_field(binary, decode_to_item(_, item_default))
+    //   decoding.read_len_field(binary, decode_to_item(_, empty_item))
     // }
     let assert Ok(_) =
       format(
         "
         pub fn read_{name}(binary: BitArray) -> #({typename}, BitArray) {
-          decoding.read_len_field(binary, decode_to_{name}(_, {name}_default))
+          decoding.read_len_field(binary, decode_to_{name}(_, empty_{name}))
         }
       ",
         [#("name", pascal_to_snake(struct.name)), #("typename", struct.name)],
@@ -506,7 +506,7 @@ fn get_default_value(ty: String, repeated: Bool) -> String {
     "Float" -> "0.0"
     "String" -> "\"\""
     // Enum or Struct
-    x -> pascal_to_snake(x) <> "_default"
+    x -> "empty_" <> pascal_to_snake(x)
   }
 }
 
@@ -573,9 +573,9 @@ fn write_enums(enums: List(parser.PbEnum), out_path: String, flags: Flags) {
     let assert Ok(_) = simplifile.append(to: out_path, contents: "}\n\n")
 
     // default value
-    // pub const user_status_default = Idle
+    // pub const empty_user_status = Idle
     let assert Ok(_) =
-      "pub const {name}_default = {value}\n"
+      "pub const empty_{name} = {value}\n"
       |> format([
         #("name", pascal_to_snake(enum.name)),
         #("value", case enum.fields |> list.first {
