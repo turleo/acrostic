@@ -112,9 +112,6 @@ pub fn decode_field(
   }
 }
 
-// 如果 字段是 varint/i32/i64 unpacked, wire_type = VarInt / I32 / I64
-// 如果 字段是 varint/i32/i64 packed, wire_type = LEN
-// 如果 字段是 string/struct unpacked, wire_type = LEN
 pub fn decode_repeated_field(
   binary: BitArray,
   wire_type: WireType,

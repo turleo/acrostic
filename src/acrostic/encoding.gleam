@@ -1,4 +1,4 @@
-import acrostic/helper.{lsr}
+import acrostic/internal/helper.{lsr}
 import acrostic/wire.{type WireType}
 import gleam/bit_array
 import gleam/int

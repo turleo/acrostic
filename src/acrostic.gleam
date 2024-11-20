@@ -1,5 +1,5 @@
-import acrostic/helper
-import acrostic/parser
+import acrostic/internal/helper
+import acrostic/internal/parser
 import gleam/int
 import gleam/io
 import gleam/list
