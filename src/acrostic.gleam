@@ -228,20 +228,20 @@ fn get_message_case_code(msg: Message) -> String {
         #("reader", get_reader_string(f)),
         #("field_number", int.to_string(f.tag)),
         #("field_name", {
-          case f.repeated, field_is_packed(f) {
-            True, False -> "value"
-            _, _ -> f.name
+          case f.repeated {
+            True -> "addit_" <> f.name
+            False -> f.name
           }
         }),
         #(
           "message",
           message_to_string(msg, fn(f2) {
-            case f.name == f2.name, f2.repeated, field_is_packed(f2) {
-              True, True, False ->
-                format("list.append({field_name}, [value])", [
+            case f.name == f2.name, f2.repeated {
+              True, True ->
+                format("list.append({field_name}, addit_{field_name})", [
                   #("field_name", f2.name),
                 ])
-              _, _, _ -> f2.name
+              _, _ -> f2.name
             }
           }),
         ),
@@ -357,19 +357,22 @@ fn write_structs(structs: List(Message), out_path: String) {
                     #("field_number", int.to_string(f.tag)),
                     #("field_name", f.name),
                     #("var_name", {
-                      case f.repeated, field_is_packed(f) {
-                        True, False -> "value"
-                        _, _ -> f.name
+                      case f.repeated {
+                        True -> "addit_" <> f.name
+                        False -> f.name
                       }
                     }),
                     #("field_value", {
-                      case f.repeated, field_is_packed(f) {
-                        True, False ->
-                          format("list.append({name}.{field_name}, [value])", [
-                            #("name", pascal_to_snake(struct.name)),
-                            #("field_name", f.name),
-                          ])
-                        _, _ -> f.name
+                      case f.repeated {
+                        True ->
+                          format(
+                            "list.append({name}.{field_name}, addit_{field_name})",
+                            [
+                              #("name", pascal_to_snake(struct.name)),
+                              #("field_name", f.name),
+                            ],
+                          )
+                        False -> f.name
                       }
                     }),
                   ],
@@ -470,17 +473,6 @@ fn get_reader_string(field: parser.PbMessageField) -> String {
       s |> string.replace("decode_field", "decode_repeated_field")
     }
     False -> s
-  }
-}
-
-fn field_is_packed(field: parser.PbMessageField) -> Bool {
-  case field.ty {
-    "int32" | "int64" | "uint32" | "uint64" if field.repeated -> True
-    "bool" if field.repeated -> True
-    "fixed64" | "sfixed64" | "double" if field.repeated -> True
-    "fixed32" | "sfixed32" | "float" if field.repeated -> True
-    // Custom Type (Enum)
-    _ -> False
   }
 }
 

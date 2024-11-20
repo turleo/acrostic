@@ -14,6 +14,12 @@ message Item {
     uint64 num = 2;
 }
 
+// @gleam record
+message Bag {
+    repeated Pet pets = 1;
+    repeated Item items = 2;
+}
+
 // client-server api
 // @gleam msgid = 1
 message Test {
