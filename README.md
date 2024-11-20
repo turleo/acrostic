@@ -20,6 +20,13 @@ Note:
 5. see `game.proto`
 
 
+Todo:
+  
+1. fix float number encode/decode
+
+Useage:
+1. use `acrostic.gen` gen gleam file (eg: `src/game.gleam`) from proto files
+
 ```sh
 gleam add acrostic
 ```
@@ -29,6 +36,24 @@ import acrostic
 pub fn main() {
   acrostic.gen(["game.proto"], to: "src/game.gleam", flags: acrostic.Flags(False, False))
 }
+```
+
+2. test encode/decode
+```gleam
+import game
+
+let binary = game.encode(
+    game.Test(
+      hello: "hi",
+      world: 1.0,
+      item: game.Item(id:1, num:1),
+      pet: game.Cat,
+      nums: []
+    )
+  )
+
+let assert Ok(test_msg) = game.decode(binary)
+
 ```
 
 Further documentation can be found at <https://hexdocs.pm/acrostic>.
