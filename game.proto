@@ -7,7 +7,6 @@ enum Pet {
     Cat = 1;
 }
 
-// embedded in api
 // @gleam record
 message Item {
     uint64 id = 1;
@@ -20,7 +19,6 @@ message Bag {
     repeated Item items = 2;
 }
 
-// client-server api
 // @gleam msgid = 1
 message Test {
     string hello = 1;

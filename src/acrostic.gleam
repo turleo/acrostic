@@ -248,11 +248,20 @@ fn get_message_case_code(msg: Message) -> String {
       ],
     )
   })
-  |> list.fold(message_to_string(msg, fn(f) { f.name }) <> "
+  |> list.fold(
+    message_to_string(msg, fn(f) {
+      case list.length(msg.fields) > 1 {
+        True -> f.name
+        False -> "_" <> f.name
+      }
+    })
+      <> "
     -> {
       use #(key, binary) <- result.try(decoding.read_key(binary))
       case key.field_number {
-  ", string.append)
+  ",
+    string.append,
+  )
   |> string.append(
     "   _ -> Error(\"Invalid field_number\")
       }
