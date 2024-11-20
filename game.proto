@@ -1,6 +1,12 @@
 syntax = "proto3";
 package game;
 
+
+enum Pet {
+    Dog = 0;
+    Cat = 1;
+}
+
 // embedded in api
 // @gleam record
 message Item {
@@ -14,5 +20,6 @@ message Test {
     string hello = 1;
     double world = 2;
     Item item = 3;
-    repeated int32 nums = 4;
+    Pet pet = 4;
+    repeated int32 nums = 5;
 }

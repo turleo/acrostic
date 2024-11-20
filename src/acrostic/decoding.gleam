@@ -1,169 +1,251 @@
+import acrostic/wire.{type WireType}
 import gleam/bit_array
 import gleam/int
 import gleam/list
 import gleam/result
 
 pub type Key {
-  Key(field_number: Int, wire_type: Int)
+  Key(field_number: Int, wire_type: WireType)
 }
 
 const wire_type_mask = 0b111
 
-// len_type decoder (string struct)
-// decoder start -------------------------------------------
-// pub fn decode_to_i64(binary: BitArray) -> Result(Float, String) {
-//   case binary {
-//     <<n:float-size(64)>> -> Ok(n)
-//     _ -> Error("unable decode to i64")
-//   }
-// }
+pub fn read_key(binary: BitArray) -> Result(#(Key, BitArray), String) {
+  use r <- result.try(read_varint_bytes(binary))
+  use n <- result.try(decode_to_int(r.readed))
+  let wire_type = int.bitwise_and(n, wire_type_mask)
+  let field_number = int.bitwise_shift_right(n - wire_type, 3)
+  use wire_type <- result.try(wire.from_int(wire_type))
+  Ok(#(Key(field_number, wire_type), r.rest))
+}
 
-// pub fn decode_to_i32(binary: BitArray) -> Result(Float, String) {
-//   case binary {
-//     <<n:float-size(32)>> -> Ok(n)
-//     _ -> Error("unable decode to i32")
-//   }
-// }
+pub fn to_varint(binary: BitArray, acc: Int) -> Int {
+  let len = bit_array.byte_size(binary)
+  case binary {
+    <<byte, rest:bits>> -> {
+      to_varint(
+        rest,
+        int.bitwise_shift_left(int.bitwise_and(byte, 0x7F), { len - 1 } * 7)
+          + acc,
+      )
+    }
+    _ -> acc
+  }
+}
 
-pub fn decode_to_string(binary: BitArray) -> Result(String, String) {
+fn decode_to_int(binary: BitArray) -> Result(Int, String) {
+  Ok(to_varint(binary, 0))
+}
+
+fn decode_to_bool(binary: BitArray) -> Result(Bool, String) {
+  case to_varint(binary, 0) {
+    0 -> Ok(False)
+    1 -> Ok(True)
+    _ ->
+      Error("Decode to bool failed: " <> bit_array.base64_encode(binary, False))
+  }
+}
+
+fn decode_to_i32(binary: BitArray) -> Result(Float, String) {
+  case binary {
+    <<f:float-size(32)>> -> Ok(f)
+    _ ->
+      Error("Decode to i32 failed: " <> bit_array.base64_encode(binary, False))
+  }
+}
+
+fn decode_to_i64(binary: BitArray) -> Result(Float, String) {
+  case binary {
+    <<f:float-size(64)>> -> Ok(f)
+    _ ->
+      Error("Decode to i64 failed: " <> bit_array.base64_encode(binary, False))
+  }
+}
+
+fn decode_to_string(binary: BitArray) -> Result(String, String) {
   case binary |> bit_array.to_string {
-    Ok(str) -> Ok(str)
-    Error(_) -> Error("unable decode to string")
+    Ok(s) -> Ok(s)
+    Error(_) ->
+      Error(
+        "Decode to string failed: " <> bit_array.base64_encode(binary, False),
+      )
   }
 }
 
-// deocder ended -------------------------------------------
+pub type BasicDecoder(value) =
+  fn(BitArray) -> Result(value, String)
 
-// reader --------------------------------------------------
-pub fn read_string(binary: BitArray) -> #(String, BitArray) {
-  let #(len, binary) = read_varint(binary)
-  case read_bytes(binary, len) {
-    Ok(#(readed, reset)) -> #(
-      readed |> bit_array.to_string |> result.unwrap(""),
-      reset,
-    )
-    _ -> panic
-  }
+pub type FieldDecoder(value) {
+  FieldDecoder(wire_type: WireType, decode: BasicDecoder(value))
 }
 
-pub fn read_i32(binary: BitArray) -> #(Float, BitArray) {
-  case binary {
-    <<first:float-size(32), rest:bits>> -> #(first, rest)
-    _ -> panic as "can't read i32"
-  }
-}
-
-pub fn read_i64(binary: BitArray) -> #(Float, BitArray) {
-  case binary {
-    <<first:float-size(64), rest:bits>> -> #(first, rest)
-    _ -> panic as "can't read i64"
-  }
-}
-
-pub fn read_key(binary: BitArray) -> #(Key, BitArray) {
-  let #(num, binary) = read_varint(binary)
-  let wire_type = int.bitwise_and(num, wire_type_mask)
-  let field_number = int.bitwise_shift_right(num - wire_type, 3)
-  #(Key(field_number, wire_type), binary)
-}
-
-pub fn read_bool(binary: BitArray) -> #(Bool, BitArray) {
-  let #(num, binary) = read_varint(binary)
-  case num {
-    0 -> #(False, binary)
-    1 -> #(True, binary)
-    x -> panic as { "Invalid bool: " <> int.to_string(x) }
-  }
-}
-
-pub fn read_varint(binary: BitArray) -> #(Int, BitArray) {
-  // [high -> low]
-  let #(binary, bytes) = read_varint_bytes(binary, [])
-  #(calc_varint(bytes, 0), binary)
-}
-
-// string struct
-pub fn read_len_field(
+pub fn decode_field(
   binary: BitArray,
-  decoder: fn(BitArray) -> Result(a, String),
-) -> #(a, BitArray) {
-  let #(length, binary) = read_varint(binary)
-  let assert Ok(#(bytes, rest)) = read_bytes(binary, length)
-  let assert Ok(r) = decoder(bytes)
-  #(r, rest)
-}
-
-// packed? Gleam: (Int Bool Float Enum) (wire_type: varint i32 i64)
-pub fn read_len_packed_field(
-  binary: BitArray,
-  reader: fn(BitArray) -> #(a, BitArray),
-) -> #(List(a), BitArray) {
-  let #(length, binary) = read_varint(binary)
-  let assert Ok(#(bytes, rest)) = read_bytes(binary, length)
-  let assert Ok(r) = decode_to_list(bytes, reader, [])
-  #(r, rest)
-}
-
-fn decode_to_list(
-  binary: BitArray,
-  reader: fn(BitArray) -> #(a, BitArray),
-  results: List(a),
-) -> Result(List(a), String) {
-  case binary {
-    <<>> -> Ok(results)
-    _ -> {
-      let #(r, rest) = reader(binary)
-      decode_to_list(rest, reader, [r, ..results])
+  wire_type: WireType,
+  decoder: FieldDecoder(a),
+) -> Result(#(a, BitArray), String) {
+  case wire_type {
+    wire.VarInt -> {
+      use r <- result.try(read_varint_bytes(binary))
+      use n <- result.try(decoder.decode(r.readed))
+      Ok(#(n, r.rest))
+    }
+    wire.I64 -> {
+      use r <- result.try(read_some_bytes(binary, 8))
+      use n <- result.try(decoder.decode(r.readed))
+      Ok(#(n, r.rest))
+    }
+    wire.I32 -> {
+      use r <- result.try(read_some_bytes(binary, 4))
+      use n <- result.try(decoder.decode(r.readed))
+      Ok(#(n, r.rest))
+    }
+    wire.Len -> {
+      // length
+      use r <- result.try(read_varint_bytes(binary))
+      use l <- result.try(decode_to_int(r.readed))
+      // value
+      use r <- result.try(read_some_bytes(r.rest, l))
+      use v <- result.try(decoder.decode(r.readed))
+      Ok(#(v, r.rest))
     }
   }
 }
 
-// util ------------------------------------------------------------------------
-fn calc_varint(bytes: List(Int), sum: Int) -> Int {
-  case list.length(bytes) {
-    len if len > 0 -> {
-      let assert [first, ..rest] = bytes
-      calc_varint(rest, int.bitwise_shift_left(first, { len - 1 } * 7) + sum)
+// 如果 字段是 varint/i32/i64 unpacked, wire_type = VarInt / I32 / I64
+// 如果 字段是 varint/i32/i64 packed, wire_type = LEN
+// 如果 字段是 string/struct unpacked, wire_type = LEN
+pub fn decode_repeated_field(
+  binary: BitArray,
+  wire_type: WireType,
+  decoder: FieldDecoder(a),
+) -> Result(#(List(a), BitArray), String) {
+  case wire_type {
+    wire.VarInt -> {
+      use r <- result.try(read_varint_bytes(binary))
+      use n <- result.try(decoder.decode(r.readed))
+      Ok(#([n], r.rest))
     }
-    _ -> sum
-  }
-}
+    wire.I64 -> {
+      use r <- result.try(read_some_bytes(binary, 8))
+      use n <- result.try(decoder.decode(r.readed))
+      Ok(#([n], r.rest))
+    }
+    wire.I32 -> {
+      use r <- result.try(read_some_bytes(binary, 4))
+      use n <- result.try(decoder.decode(r.readed))
+      Ok(#([n], r.rest))
+    }
+    wire.Len -> {
+      // length
+      use r <- result.try(read_varint_bytes(binary))
+      use l <- result.try(decode_to_int(r.readed))
+      // value
+      use r <- result.try(read_some_bytes(r.rest, l))
 
-fn read_varint_bytes(
-  bin: BitArray,
-  results: List(Int),
-) -> #(BitArray, List(Int)) {
-  case read_byte(bin) {
-    #(bin, 0) -> #(bin, results)
-    #(bin, byte) -> {
-      case int.bitwise_and(byte, 0x80) {
-        flag if flag > 0 ->
-          read_varint_bytes(bin, [int.bitwise_and(byte, 0x7F), ..results])
-        _ -> #(bin, [byte, ..results])
+      case decoder.wire_type == wire.Len {
+        // string | struct
+        True -> {
+          use v <- result.try(decoder.decode(r.readed))
+          Ok(#([v], r.rest))
+        }
+        // packed numbers
+        False -> {
+          use numbers <- result.try(
+            decode_packed_numbers(r.readed, decoder, []),
+          )
+          Ok(#(list.reverse(numbers), r.rest))
+        }
       }
     }
   }
 }
 
-pub fn read_bytes(
-  bin: BitArray,
-  length: Int,
-) -> Result(#(BitArray, BitArray), Nil) {
-  case bit_array.byte_size(bin) >= length {
-    True ->
-      Ok(#(
-        bit_array.slice(bin, 0, length) |> result.unwrap(<<>>),
-        bit_array.slice(bin, length, bit_array.byte_size(bin) - length)
-          |> result.unwrap(<<>>),
-      ))
-    False -> Error(Nil)
+fn decode_packed_numbers(
+  binary: BitArray,
+  decoder: FieldDecoder(a),
+  results: List(a),
+) -> Result(List(a), String) {
+  case binary {
+    <<>> -> Ok(results)
+    _ -> {
+      use r <- result.try({
+        case decoder.wire_type {
+          wire.VarInt -> read_varint_bytes(binary)
+          wire.I64 -> read_some_bytes(binary, 8)
+          wire.I32 -> read_some_bytes(binary, 4)
+          _ -> Error("Decode packed numbers failed: invalid wire_type")
+        }
+      })
+      use n <- result.try(decoder.decode(r.readed))
+      decode_packed_numbers(r.rest, decoder, [n, ..results])
+    }
   }
 }
 
-fn read_byte(bin: BitArray) -> #(BitArray, Int) {
-  case bin {
-    <<>> -> #(<<>>, 0)
-    <<byte:size(8), rest:bits>> -> #(rest, byte)
-    _ -> panic
+// basic field decoders
+pub const int_field_decoder = FieldDecoder(
+  wire_type: wire.VarInt,
+  decode: decode_to_int,
+)
+
+pub const bool_field_decoder = FieldDecoder(
+  wire_type: wire.VarInt,
+  decode: decode_to_bool,
+)
+
+pub const i64_field_decoder = FieldDecoder(
+  wire_type: wire.I64,
+  decode: decode_to_i64,
+)
+
+pub const i32_field_decoder = FieldDecoder(
+  wire_type: wire.I32,
+  decode: decode_to_i32,
+)
+
+pub const string_field_decoder = FieldDecoder(
+  wire_type: wire.Len,
+  decode: decode_to_string,
+)
+
+// utils
+type ReadResult {
+  ReadResult(readed: BitArray, rest: BitArray)
+}
+
+fn read_some_bytes(binary: BitArray, length: Int) -> Result(ReadResult, String) {
+  case bit_array.byte_size(binary) >= length {
+    True -> {
+      let readed =
+        bit_array.slice(binary, 0, length) |> result.lazy_unwrap(fn() { panic })
+      let rest =
+        bit_array.slice(binary, length, bit_array.byte_size(binary) - length)
+        |> result.lazy_unwrap(fn() { panic })
+      Ok(ReadResult(readed, rest))
+    }
+    False -> Error("Read bytes failed")
+  }
+}
+
+fn read_varint_bytes(binary: BitArray) -> Result(ReadResult, String) {
+  read_varint_byte(binary, <<>>)
+}
+
+fn read_varint_byte(binary: BitArray, r: BitArray) -> Result(ReadResult, String) {
+  case binary {
+    <<byte, binary:bits>> -> {
+      let r = <<r:bits, byte:size(8)>>
+      case int.bitwise_and(byte, 0x80) {
+        0 -> {
+          case bit_array.byte_size(r) > 10 {
+            True -> Error("Invalid varint, over 10 bytes")
+            False -> Ok(ReadResult(r, binary))
+          }
+        }
+        _ -> read_varint_byte(binary, r)
+      }
+    }
+    _ -> Error("Invalid ended of varint")
   }
 }

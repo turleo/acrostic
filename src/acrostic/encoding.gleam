@@ -1,4 +1,5 @@
 import acrostic/helper.{lsr}
+import acrostic/wire.{type WireType}
 import gleam/bit_array
 import gleam/int
 import gleam/list
@@ -42,23 +43,6 @@ pub fn encode_string(s: String) {
   <<s:utf8>>
 }
 
-// field encoder
-pub type WireType {
-  WireVarIntTy
-  WireI64Ty
-  WireLenTy
-  WireI32Ty
-}
-
-fn wire_to_int(wire: WireType) {
-  case wire {
-    WireVarIntTy -> 0
-    WireI64Ty -> 1
-    WireLenTy -> 2
-    WireI32Ty -> 5
-  }
-}
-
 pub type FieldEncoder(value) {
   FieldEncoder(wire_type: WireType, encode: BasicEncoder(value))
 }
@@ -68,9 +52,9 @@ pub fn encode_field(
   value: value,
   encoder: FieldEncoder(value),
 ) -> BitArray {
-  let key = encode_key(field_num, encoder.wire_type |> wire_to_int)
+  let key = encode_key(field_num, encoder.wire_type |> wire.to_int)
   let body = encoder.encode(value)
-  let length = case encoder.wire_type == WireLenTy {
+  let length = case encoder.wire_type == wire.Len {
     True -> encode_varint(bit_array.byte_size(body))
     False -> <<>>
   }
@@ -86,10 +70,10 @@ pub fn encode_repeated_field(
   case list {
     [] -> <<>>
     _ -> {
-      let packed = encoder.wire_type != WireLenTy
+      let packed = encoder.wire_type != wire.Len
       case packed {
         True -> {
-          let key = encode_key(field_num, WireLenTy |> wire_to_int)
+          let key = encode_key(field_num, wire.Len |> wire.to_int)
           let body =
             list
             |> list.map(fn(v) { encoder.encode(v) })
@@ -116,26 +100,26 @@ fn encode_key(field_number: Int, wire_type: Int) -> BitArray {
 
 // basic field encoders
 pub const int_field_encoder = FieldEncoder(
-  wire_type: WireVarIntTy,
+  wire_type: wire.VarInt,
   encode: encode_varint,
 )
 
 pub const bool_field_encoder = FieldEncoder(
-  wire_type: WireVarIntTy,
+  wire_type: wire.VarInt,
   encode: encode_bool,
 )
 
 pub const i64_field_encoder = FieldEncoder(
-  wire_type: WireI64Ty,
+  wire_type: wire.I64,
   encode: encode_i64,
 )
 
 pub const i32_field_encoder = FieldEncoder(
-  wire_type: WireI32Ty,
+  wire_type: wire.I32,
   encode: encode_i32,
 )
 
 pub const string_field_encoder = FieldEncoder(
-  wire_type: WireLenTy,
+  wire_type: wire.Len,
   encode: encode_string,
 )
