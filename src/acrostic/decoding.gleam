@@ -48,7 +48,7 @@ fn decode_to_bool(binary: BitArray) -> Result(Bool, String) {
 
 fn decode_to_i32(binary: BitArray) -> Result(Float, String) {
   case binary {
-    <<f:float-size(32)>> -> Ok(f)
+    <<f:float-little-size(32)>> -> Ok(f)
     _ ->
       Error("Decode to i32 failed: " <> bit_array.base64_encode(binary, False))
   }
@@ -56,7 +56,7 @@ fn decode_to_i32(binary: BitArray) -> Result(Float, String) {
 
 fn decode_to_i64(binary: BitArray) -> Result(Float, String) {
   case binary {
-    <<f:float-size(64)>> -> Ok(f)
+    <<f:float-little-size(64)>> -> Ok(f)
     _ ->
       Error("Decode to i64 failed: " <> bit_array.base64_encode(binary, False))
   }

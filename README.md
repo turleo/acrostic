@@ -6,7 +6,7 @@
 A pure Gleam implementation of Google Protobuf.
 
 
-Note:
+## Note:
 
 1. only support proto3
 2. only support enum, message, repeated
@@ -20,11 +20,8 @@ Note:
 5. see `game.proto`
 
 
-Todo:
-  
-1. fix float number encode/decode
 
-Useage:
+## Useage:
 1. use `acrostic.gen` gen gleam file (eg: `src/game.gleam`) from proto files
 
 ```sh
@@ -61,6 +58,5 @@ Further documentation can be found at <https://hexdocs.pm/acrostic>.
 ## Development
 
 ```sh
-gleam run   # Run the project
 gleam test  # Run the tests
 ```

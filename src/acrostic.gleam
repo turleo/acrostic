@@ -152,7 +152,7 @@ fn write_messages(messages: List(Message), out_path: String) {
     |> list.map(fn(msg) { get_message_case_code(msg) })
     |> list.fold(
       "
-        pub fn decode_message(msg: Message, binary: BitArray) -> Result(Message, String) {
+        pub fn decode_to_message(binary: BitArray, msg: Message) -> Result(Message, String) {
         case binary {
           <<>> -> Ok(msg)
         _ -> case msg {
@@ -193,7 +193,7 @@ fn write_decode(messages: List(Message), out_path: String) {
   let assert Ok(_) =
     messages
     |> list.map(fn(msg) {
-      format("{id} -> decode_message({default},binary)\n", [
+      format("{id} -> decode_to_message(binary, {default})\n", [
         #("id", int.to_string(msg.id)),
         #("default", "empty_" <> pascal_to_snake(msg.name)),
       ])
@@ -222,7 +222,7 @@ fn get_message_case_code(msg: Message) -> String {
       "
         {field_number} -> {
           use #({field_name}, binary) <- {reader}
-          decode_message({message}, binary)
+          decode_to_message(binary, {message})
         }",
       [
         #("reader", get_reader_string(f)),
