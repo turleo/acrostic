@@ -12,7 +12,7 @@ import nibble/lexer
 import simplifile
 import sprinkle.{format}
 
-pub type Message {
+type Message {
   Message(id: Int, name: String, fields: List(parser.PbMessageField))
 }
 
