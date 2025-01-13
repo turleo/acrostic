@@ -4,7 +4,7 @@ import gleam/int
 import gleam/io
 import gleam/list
 import gleam/option
-import gleam/regex
+import gleam/regexp
 import gleam/result
 import gleam/string
 import nibble
@@ -734,8 +734,8 @@ fn write_enum_to_int(enum: parser.PbEnum, out_path: String) {
 }
 
 fn get_enums(text: String, lexer, parser) {
-  let assert Ok(re) = regex.from_string("enum\\s+\\w+\\s*{[^{}]*}")
-  regex.scan(re, text)
+  let assert Ok(re) = regexp.from_string("enum\\s+\\w+\\s*{[^{}]*}")
+  regexp.scan(re, text)
   |> list.map(fn(a) {
     let assert Ok(tokens) = lexer.run(a.content, lexer)
     let assert Ok(enum) = nibble.run(tokens, parser)
@@ -745,10 +745,10 @@ fn get_enums(text: String, lexer, parser) {
 
 fn get_structs(text: String, lexer, parser) {
   let assert Ok(re) =
-    regex.from_string(
+    regexp.from_string(
       "//\\s*@gleam\\s+record\\s*\nmessage\\s+\\w+\\s*{([^{}]*)}",
     )
-  regex.scan(re, text)
+  regexp.scan(re, text)
   |> list.map(fn(a) {
     let assert Ok(tokens) = lexer.run(a.content, lexer)
     let assert Ok(message) = nibble.run(tokens, parser)
@@ -758,10 +758,10 @@ fn get_structs(text: String, lexer, parser) {
 
 fn get_messages(text: String, lexer, parser) {
   let assert Ok(re) =
-    regex.from_string(
+    regexp.from_string(
       "//\\s*@gleam\\s+msgid\\s*=\\s*(\\d+)\\s*\nmessage\\s+\\w+\\s*{([^{}]*)}",
     )
-  regex.scan(re, text)
+  regexp.scan(re, text)
   |> list.map(fn(a) {
     let assert Ok(tokens) = lexer.run(a.content, lexer)
     let assert Ok(msg) = nibble.run(tokens, parser)
@@ -821,8 +821,8 @@ fn to_gleam_ty(ty: String, repeated: Bool) -> String {
 }
 
 fn pascal_to_snake(ident: String) -> String {
-  let assert Ok(re) = regex.from_string("[A-Z][a-z]*")
-  regex.scan(re, ident)
+  let assert Ok(re) = regexp.from_string("[A-Z][a-z]*")
+  regexp.scan(re, ident)
   |> list.map(fn(a) { a.content })
   |> list.map(fn(a) { string.lowercase(a) })
   |> list.fold("", fn(a, b) { a <> "_" <> b })
