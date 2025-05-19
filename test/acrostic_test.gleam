@@ -1,4 +1,6 @@
 import acrostic
+import acrostic/decoding
+import acrostic/encoding
 import gleeunit
 import gleeunit/should
 
@@ -18,4 +20,11 @@ pub fn pb_test() {
     to: "src/game.gleam",
     flags: acrostic.Flags(False, False),
   )
+}
+
+pub fn smaller_test() {
+  encoding.encode_varint(137) |> decoding.to_varint(0) |> should.equal(137)
+  encoding.encode_varint(123_456_789)
+  |> decoding.to_varint(0)
+  |> should.equal(123_456_789)
 }
