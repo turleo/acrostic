@@ -789,7 +789,7 @@ fn message_to_string(
           message.fields
           |> list.map(convert)
           |> list.fold("", fn(a, b) { a <> b <> ", " })
-          |> string.drop_right(2)
+          |> string.drop_end(2)
         }),
       ])
     }
@@ -826,5 +826,5 @@ fn pascal_to_snake(ident: String) -> String {
   |> list.map(fn(a) { a.content })
   |> list.map(fn(a) { string.lowercase(a) })
   |> list.fold("", fn(a, b) { a <> "_" <> b })
-  |> string.drop_left(1)
+  |> string.drop_start(1)
 }
