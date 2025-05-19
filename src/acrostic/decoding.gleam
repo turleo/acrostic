@@ -20,13 +20,21 @@ pub fn read_key(binary: BitArray) -> Result(#(Key, BitArray), String) {
 }
 
 pub fn to_varint(binary: BitArray, acc: Int) -> Int {
+  reverted_to_variant(binary, acc, bit_array.byte_size(binary))
+}
+
+fn reverted_to_variant(binary: BitArray, acc: Int, sum_len: Int) -> Int {
   let len = bit_array.byte_size(binary)
   case binary {
     <<byte, rest:bits>> -> {
-      to_varint(
+      reverted_to_variant(
         rest,
-        int.bitwise_shift_left(int.bitwise_and(byte, 0x7F), { len - 1 } * 7)
+        int.bitwise_shift_left(
+          int.bitwise_and(byte, 0x7F),
+          { sum_len - len } * 7,
+        )
           + acc,
+        sum_len,
       )
     }
     _ -> acc
