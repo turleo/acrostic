@@ -5,11 +5,18 @@ import gleam/list
 import gleam/string
 import gleeunit/should
 
-pub fn varint_test() {
+pub fn varint_encode_test() {
   encoding.encode_varint(137)
-  |> decoding.decode_to_int
+  |> should.equal(<<137, 1>>)
+}
+
+pub fn varint_decode_test() {
+  decoding.decode_to_int(<<137, 1>>)
   |> should.be_ok()
   |> should.equal(137)
+}
+
+pub fn varint_test() {
   encoding.encode_varint(123_456_789)
   |> decoding.decode_to_int
   |> should.be_ok()
