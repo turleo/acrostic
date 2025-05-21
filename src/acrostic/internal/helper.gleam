@@ -1,3 +1,4 @@
+import gleam/erlang/charlist.{type Charlist}
 import gleam/int
 
 /// logic shift right
@@ -10,10 +11,10 @@ pub fn lsl(n: Int, bits: Int) -> Int {
   int.bitwise_shift_left(n, bits)
 }
 
-@external(erlang, "helper_ffi", "do_cmd")
-@external(javascript, "./helper_ffi.mjs", "do_cmd")
-fn do_cmd(command: String) -> String
+@external(erlang, "os", "cmd")
+fn do_cmd(command: Charlist) -> String
 
+@target(erlang)
 pub fn cmd(command: String) -> String {
-  do_cmd(command)
+  do_cmd(charlist.from_string(command))
 }

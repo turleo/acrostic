@@ -20,6 +20,7 @@ pub type Flags {
   Flags(enum_to_int: Bool, int_to_enum: Bool)
 }
 
+@target(erlang)
 pub fn gen(protos: List(String), to out_path: String, flags flags: Flags) {
   protos
   |> list.map(fn(filepath) {
@@ -32,6 +33,11 @@ pub fn gen(protos: List(String), to out_path: String, flags flags: Flags) {
   |> generate_proto(out_path, flags)
 
   io.println("done")
+}
+
+@target(javascript)
+pub fn gen(_: List(String), to _: String, flags _: Flags) {
+  panic as "Code generation is not supported for javascript"
 }
 
 fn generate_proto(text: String, out_path: String, flags: Flags) {
