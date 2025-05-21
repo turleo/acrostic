@@ -1,4 +1,3 @@
-import gleam/erlang/charlist.{type Charlist}
 import gleam/int
 
 // const mask32bit = 0xFFFFFFFF
