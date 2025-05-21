@@ -1,5 +1,4 @@
-import { exec } from 'child_process';
-
-export function do_cmd(command) {
-  exec(command)
+export function do_cmd(_) {
+  console.error("you should use erlang target for this")
+  return ""
 }
