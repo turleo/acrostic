@@ -8,7 +8,7 @@ pub fn main() {
 pub fn pb_test() {
   acrostic.gen(
     ["game.proto"],
-    to: "src/game.gleam",
+    to: "game.gleam",
     flags: acrostic.Flags(False, False),
   )
 }
