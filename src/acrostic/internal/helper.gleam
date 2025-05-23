@@ -12,9 +12,10 @@ pub fn lsl(n: Int, bits: Int) -> Int {
 }
 
 @external(erlang, "os", "cmd")
-fn do_cmd(command: Charlist) -> String
+fn do_cmd(command: Charlist) -> String {
+  panic
+}
 
-@target(erlang)
 pub fn cmd(command: String) -> String {
   do_cmd(charlist.from_string(command))
 }
